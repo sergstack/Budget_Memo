@@ -12,6 +12,9 @@ REQUIRED_FILES = {
     "docs/local_regression_plan.md",
     "docs/artifact_validation_matrix.md",
     "docs/performance_refactor_gate.md",
+    "docs/performance_refactor_discovery.md",
+    "docs/performance_backlog.md",
+    "docs/refactor_risk_register.md",
 }
 
 REQUIRED_MARKERS = {
@@ -86,6 +89,58 @@ REQUIRED_MARKERS = {
         "blocked_without_business_approval",
         "Data-free checks pass.",
         "Local regression checks are selected if the change is data-dependent.",
+        "docs/performance_refactor_discovery.md",
+        "docs/performance_backlog.md",
+        "docs/refactor_risk_register.md",
+        "Stage 6 is discovery-only.",
+    ],
+    "docs/documentation_map.md": [
+        "docs/performance_refactor_discovery.md",
+        "docs/performance_backlog.md",
+        "docs/refactor_risk_register.md",
+    ],
+    "docs/performance_refactor_discovery.md": [
+        "Summary",
+        "Scope Inspected",
+        "Entrypoints Inspected",
+        "Pipeline I/O Findings",
+        "Pandas / Dataframe Findings",
+        "Report / DOCX / Render Findings",
+        "Ollama / LLM Path Findings",
+        "Test Cost Findings",
+        "High-Risk Business Logic Zones",
+        "Low-Risk Future Candidates",
+        "Blocked Candidates",
+        "Recommended Next Stages",
+        "No code was changed",
+        "no optimization was implemented",
+        "no full pipeline was run",
+        "no report generation was run",
+        "no Ollama/live LLM was run",
+    ],
+    "docs/performance_backlog.md": [
+        "PERF-001",
+        "Excel reading and xlsx cleaning",
+        "repeated file reads",
+        "DataFrame `apply(axis=1)`",
+        "large groupby / merge / concat paths",
+        "DOCX generation",
+        "chart/render pipeline",
+        "Ollama/live LLM generation",
+        "test suite split",
+        "CI data-free vs local lanes",
+    ],
+    "docs/refactor_risk_register.md": [
+        "stage schema / grain",
+        "mart formulas",
+        "counterparty normalization",
+        "p-fact reconciliation",
+        "IN / OUT / IN-OUT handling",
+        "source_mix logic",
+        "report package generation",
+        "claim/evidence/LLM boundary",
+        "test fixture/data dependency",
+        "artifact leakage",
     ],
 }
 
@@ -104,6 +159,9 @@ DISALLOWED_WORKFLOW_MARKERS = {
     "local_regression_plan.md",
     "artifact_validation_matrix.md",
     "performance_refactor_gate.md",
+    "performance_refactor_discovery.md",
+    "performance_backlog.md",
+    "refactor_risk_register.md",
 }
 
 REQUIRED_WORKFLOW_MARKERS = {
