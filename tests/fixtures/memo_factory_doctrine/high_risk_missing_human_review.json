@@ -1,0 +1,21 @@
+{
+  "memo_id": "memo_test",
+  "checks": {
+    "scope_fixed": true,
+    "data_contract_passed": true,
+    "mart_verification_passed": true,
+    "formula_checks_passed": true,
+    "claim_registry_exists": true,
+    "critical_claims_have_evidence_id": true,
+    "claim_freeze_diff_passed": true,
+    "evidence_judge_passed": true,
+    "finance_or_logic_judge_passed": true,
+    "russian_language_judge_passed": true,
+    "management_readability_judge_passed": true,
+    "docx_media_count_passed": true,
+    "libreoffice_render_passed": true,
+    "release_manifest_exists": true,
+    "human_review_required_or_pending": false,
+    "learning_note_saved_after_non_trivial_fix": true
+  }
+}

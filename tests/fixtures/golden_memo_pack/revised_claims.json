@@ -1,0 +1,31 @@
+{
+  "claims": [
+    {
+      "claim_id": "CLM-001",
+      "claim_text": "Plan equals 100 EUR",
+      "amount": "100",
+      "period": "2026-04",
+      "formula": "plan",
+      "strength": "weak",
+      "evidence_id": "EV-001"
+    },
+    {
+      "claim_id": "CLM-002",
+      "claim_text": "Fact equals 95 EUR",
+      "amount": "95",
+      "period": "2026-05",
+      "formula": "fact_adjusted",
+      "strength": "strong",
+      "evidence_id": "EV-FAKE"
+    },
+    {
+      "claim_id": "CLM-003",
+      "claim_text": "New unsupported reason",
+      "amount": "10",
+      "period": "2026-04",
+      "formula": "reason",
+      "strength": "strong",
+      "evidence_id": "EV-003"
+    }
+  ]
+}

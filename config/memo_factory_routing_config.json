@@ -1,0 +1,118 @@
+{
+  "doctrine": "MODEL_ROUTING_MAX_CHAIN_DOCTRINE",
+  "endpoint": "http://127.0.0.1:11434",
+  "metadata_requirements": [
+    "role",
+    "primary_model",
+    "fallback_model",
+    "fallback_used",
+    "fallback_reason",
+    "final_model",
+    "endpoint",
+    "response_status"
+  ],
+  "roles": {
+    "writer": {
+      "role": "writer",
+      "primary_model": "qwen2.5-coder:32b",
+      "fallback_model": "qwen3-coder:30b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "qwen2.5-coder:32b",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "json_schema_builder": {
+      "role": "json_schema_builder",
+      "primary_model": "qwen2.5-coder:32b",
+      "fallback_model": "qwen3-coder:30b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "qwen2.5-coder:32b",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "revisor": {
+      "role": "revisor",
+      "primary_model": "akdengi/saiga-llama3-8b:latest",
+      "fallback_model": "qwen2.5-coder:32b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "akdengi/saiga-llama3-8b:latest",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "finance_checker": {
+      "role": "finance_checker",
+      "primary_model": "mistral-small:latest",
+      "fallback_model": "qwen2.5-coder:32b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "mistral-small:latest",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "evidence_judge": {
+      "role": "evidence_judge",
+      "primary_model": "deepseek-r1:32b",
+      "fallback_model": "mistral-small:latest",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "deepseek-r1:32b",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run",
+      "schema_mode": true
+    },
+    "logic_judge": {
+      "role": "logic_judge",
+      "primary_model": "mistral-small:latest",
+      "fallback_model": "qwen2.5-coder:32b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "mistral-small:latest",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "russian_editor": {
+      "role": "russian_editor",
+      "primary_model": "akdengi/saiga-llama3-8b:latest",
+      "fallback_model": "qwen2.5-coder:32b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "akdengi/saiga-llama3-8b:latest",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "summarizer": {
+      "role": "summarizer",
+      "primary_model": "phi4:latest",
+      "fallback_model": "OxW/Saiga_YandexGPT_8B:q6_K",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "phi4:latest",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    },
+    "release_reviewer": {
+      "role": "release_reviewer",
+      "primary_model": "deepseek-r1:32b",
+      "fallback_model": "mistral-small:latest",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "deepseek-r1:32b",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run",
+      "schema_mode": true
+    },
+    "final_fallback": {
+      "role": "final_fallback",
+      "primary_model": "qwen2.5-coder:32b",
+      "fallback_model": "qwen2.5-coder:32b",
+      "fallback_used": false,
+      "fallback_reason": "",
+      "final_model": "qwen2.5-coder:32b",
+      "endpoint": "http://127.0.0.1:11434",
+      "response_status": "not_run"
+    }
+  }
+}

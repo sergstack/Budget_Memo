@@ -1,0 +1,78 @@
+judge_rubric:
+  version: "0.2"
+  status: draft_requires_calibration
+  max_score: 100
+
+  hard_blockers:
+    - data_contract_fail
+    - mart_verification_fail
+    - formula_or_metric_fail
+    - critical_claim_without_evidence
+    - unsupported_root_cause
+    - new_claim_after_freeze
+    - fake_evidence
+    - docx_render_qa_fail
+    - release_reviewer_fail
+
+  scoring_draft:
+    calculations_and_periods:
+      weight: 25
+      status: draft
+      checks:
+        - correct_period
+        - correct_formula
+        - reconciled_totals
+
+    evidence_safety:
+      weight: 20
+      status: draft
+      checks:
+        - evidence_id_for_critical_claims
+        - unsupported_claims_absent
+        - weak_claims_marked
+
+    claim_discipline:
+      weight: 15
+      status: draft
+      checks:
+        - claims_subset_of_frozen_registry
+        - no_new_root_causes
+        - no_formula_changes
+
+    management_usefulness:
+      weight: 15
+      status: draft
+      checks:
+        - clear_so_what
+        - risks_prioritized
+        - actions_tied_to_metrics
+
+    russian_business_style:
+      weight: 10
+      status: draft
+      checks:
+        - concise_sentences
+        - no_ai_vata
+        - no_consulting_fluff
+
+    actionability:
+      weight: 10
+      status: draft
+      checks:
+        - action_has_object
+        - action_has_metric_trigger
+        - action_has_expected_effect
+
+    artifact_quality:
+      weight: 5
+      status: draft
+      checks:
+        - docx_opens
+        - charts_open
+        - no_todo_placeholders
+
+  calibration_required:
+    - run_on_3_real_memos
+    - run_on_3_bad_cases
+    - compare_with_human_review
+    - adjust_weights_after_feedback

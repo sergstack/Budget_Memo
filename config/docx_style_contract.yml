@@ -1,0 +1,53 @@
+page:
+  size: A4
+  margins_cm:
+    top: 1.8
+    bottom: 1.8
+    left: 1.8
+    right: 1.8
+
+fonts:
+  body:
+    min_size_pt: 10
+    preferred_size_pt: 10.5
+  table:
+    min_size_pt: 8.5
+  h1:
+    min_size_pt: 15
+    bold: true
+  h2:
+    min_size_pt: 12
+    bold: true
+
+tables:
+  max_columns_main_body: 6
+  repeat_header_rows_required: true
+  numeric_alignment: right
+  text_alignment: left
+  require_readable_headers: true
+  wide_tables_to_appendix: true
+
+charts:
+  min_width_cm: 13
+  min_dpi: 150
+  require_caption: true
+  require_nearby_interpretation: true
+  forbid_blank_charts: true
+  forbid_default_technical_titles: true
+
+language:
+  report_language: ru
+  forbid_english_technical_titles: true
+
+appendix:
+  require_clean_page_break: true
+  require_appendix_heading: true
+  forbid_mixing_with_main_report: true
+
+publishing_hygiene:
+  forbid_tracked_changes: true
+  forbid_comments: true
+  forbid_debug_paths: true
+  forbid_local_temp_paths: true
+  forbid_excessive_custom_metadata: true
+

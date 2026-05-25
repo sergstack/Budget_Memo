@@ -1,0 +1,16 @@
+{
+  "memo_id": "memo_test",
+  "case_id": "case_test",
+  "release_status": "pass",
+  "source_artifacts": [
+    "tests/fixtures/memo_factory_doctrine/judge_report.json"
+  ],
+  "judge_report_path": "tests/fixtures/memo_factory_doctrine/judge_report.json",
+  "created_at": "2026-05-23T00:00:00Z",
+  "render_required": true,
+  "render_qa_path": "tests/fixtures/memo_factory_doctrine/render_qa.json",
+  "human_acceptance_note_path": "tests/fixtures/memo_factory_doctrine/human_acceptance_note.md",
+  "required_gates_status": "pass",
+  "release_artifacts": [],
+  "residual_risks": []
+}

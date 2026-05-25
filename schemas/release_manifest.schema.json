@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Golden Memo Pack Release Manifest",
+  "type": "object",
+  "required": [
+    "memo_id",
+    "case_id",
+    "release_status",
+    "source_artifacts",
+    "judge_report_path",
+    "created_at"
+  ],
+  "properties": {
+    "memo_id": { "type": "string" },
+    "case_id": { "type": "string" },
+    "release_status": { "type": "string", "enum": ["pass", "fail", "blocked"] },
+    "source_artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "judge_report_path": { "type": "string" },
+    "created_at": { "type": "string" },
+    "render_qa_path": { "type": "string" },
+    "human_acceptance_note_path": { "type": "string" },
+    "release_artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "residual_risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

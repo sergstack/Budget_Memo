@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Memo Factory Quality Gate Result",
+  "type": "object",
+  "required": ["memo_id", "gate", "status", "checked_at", "blockers", "warnings", "artifacts"],
+  "properties": {
+    "memo_id": { "type": "string" },
+    "gate": { "type": "string" },
+    "status": { "type": "string", "enum": ["pass", "warn", "fail", "blocked"] },
+    "checked_at": { "type": "string" },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,29 @@
+doctrine: MODEL_ROUTING_MAX_CHAIN_DOCTRINE
+gates:
+  - id: intake_scope
+  - id: data_contract
+  - id: mart_metric_verification
+  - id: evidence_claim_registry
+  - id: analyst_lenses
+  - id: narrative_writing
+  - id: judge_revision
+  - id: artifact_release_learning
+stop_rules:
+  - data_contract_fail
+  - mart_verification_fail
+  - critical_claim_without_evidence
+  - formula_or_metric_fail
+  - evidence_judge_fail
+  - docx_render_qa_fail
+claim_freeze:
+  after_gate: evidence_claim_registry
+  allowed:
+    - rewrite_wording
+  forbidden:
+    - add_new_claim
+    - add_new_reason
+    - change_amount
+    - change_period
+    - change_formula
+    - upgrade_weak_claim_to_strong
+    - invent_evidence

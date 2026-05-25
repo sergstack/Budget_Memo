@@ -1,0 +1,11 @@
+{
+  "memo_id": "memo_test",
+  "case_id": "case_test",
+  "verdict": "pass",
+  "issues": [],
+  "recommendation": "release_may_continue",
+  "unsupported_claims": [],
+  "formula_violations": [],
+  "new_claims_after_freeze": [],
+  "action_maturity_violations": []
+}

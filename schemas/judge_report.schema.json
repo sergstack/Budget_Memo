@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Golden Memo Pack Judge Report",
+  "type": "object",
+  "required": ["memo_id", "case_id", "verdict", "issues", "recommendation"],
+  "properties": {
+    "memo_id": { "type": "string" },
+    "case_id": { "type": "string" },
+    "verdict": { "type": "string", "enum": ["pass", "warn", "fail", "blocked"] },
+    "issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommendation": { "type": "string" },
+    "unsupported_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "formula_violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "new_claims_after_freeze": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "action_maturity_violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,36 @@
+case_id: golden_memo_case_001
+status: blocked_until_real_data
+case_type: golden_positive_case
+
+required_inputs:
+  - raw_source_file
+  - stage_output
+  - mart_output
+  - formula_registry
+  - claim_registry
+  - evidence_registry
+  - accepted_memo
+  - expected_judge_report
+  - human_acceptance_note
+
+must_pass:
+  - scope_fixed
+  - data_contract_passed
+  - raw_equals_stage
+  - stage_equals_mart
+  - formulas_match_registry
+  - all_critical_claims_have_evidence_id
+  - memo_claims_subset_of_claim_registry
+  - judge_verdict_pass
+  - docx_render_pass
+  - release_manifest_saved
+  - learning_note_saved
+
+current_blockers:
+  - no_approved_golden_case
+  - no_human_accepted_memo
+  - no_expected_judge_report
+
+release_policy:
+  production_ready_after_this_case: false
+  reason: "Golden case validates one positive path only; bad-case regression and human acceptance are still required."

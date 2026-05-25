@@ -1,0 +1,10 @@
+jsonschema
+matplotlib
+numpy
+openpyxl
+pandas
+pdf2image
+pillow
+pyarrow
+PyYAML
+python-docx

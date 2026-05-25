@@ -1,0 +1,104 @@
+{
+  "routing_source": "user task benchmark routing; benchmark_report.md was not present in repository during configuration",
+  "ollama_url": "http://127.0.0.1:11434",
+  "pipeline_order": [
+    "analyst",
+    "judge",
+    "russian_revisor",
+    "final_qa_gate"
+  ],
+  "roles": [
+    {
+      "role": "analyst",
+      "primary_model": "qwen2.5-coder:32b",
+      "fallback_model": "qwen3-coder:30b",
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "max_tokens": 3500,
+      "required_input_artifacts": [
+        "accepted_deterministic_package",
+        "claim_candidates",
+        "evidence_map",
+        "chart_catalog_or_metadata",
+        "report_contract",
+        "package_qa"
+      ],
+      "output_artifacts": [
+        "07_qa/llm_narrative_qa/<memo_profile>__<depth_mode>__analyst_draft.md"
+      ],
+      "fail_behavior": "write blocked_ollama_unavailable QA; do not generate final narrative; do not overwrite accepted artifacts"
+    },
+    {
+      "role": "judge",
+      "primary_model": "deepseek-r1:32b",
+      "fallback_model": "mistral-small:latest",
+      "temperature": 0.0,
+      "top_p": 0.8,
+      "max_tokens": 2500,
+      "required_input_artifacts": [
+        "analyst_draft",
+        "accepted_deterministic_package",
+        "claim_candidates",
+        "evidence_map",
+        "chart_catalog_or_metadata",
+        "report_contract",
+        "package_qa"
+      ],
+      "output_artifacts": [
+        "07_qa/llm_narrative_qa/<memo_profile>__<depth_mode>__judge_review.json",
+        "07_qa/llm_narrative_qa/<memo_profile>__<depth_mode>__judge_review.md"
+      ],
+      "fail_behavior": "judge verdict block on unsupported claims or unavailable judge; fallback may be used only for invalid JSON/schema recovery and must not override a valid unfavorable verdict; do not overwrite accepted artifacts"
+    },
+    {
+      "role": "russian_revisor",
+      "primary_model": "akdengi/saiga-llama3-8b:latest",
+      "fallback_model": "qwen2.5-coder:32b",
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "max_tokens": 3500,
+      "required_input_artifacts": [
+        "analyst_draft",
+        "judge_review",
+        "accepted_deterministic_package",
+        "evidence_map",
+        "chart_catalog_or_metadata"
+      ],
+      "output_artifacts": [
+        "07_qa/llm_narrative_qa/<memo_profile>__<depth_mode>__russian_revised.md"
+      ],
+      "fail_behavior": "keep analyst draft as not accepted; write QA blocker; do not overwrite accepted artifacts"
+    },
+    {
+      "role": "final_qa_gate",
+      "primary_model": "deepseek-r1:32b",
+      "fallback_model": "mistral-small:latest",
+      "temperature": 0.0,
+      "top_p": 0.8,
+      "max_tokens": 2500,
+      "required_input_artifacts": [
+        "russian_revised",
+        "accepted_deterministic_package",
+        "claim_candidates",
+        "evidence_map",
+        "chart_catalog_or_metadata",
+        "report_contract",
+        "package_qa"
+      ],
+      "output_artifacts": [
+        "07_qa/llm_narrative_qa/<memo_profile>__<depth_mode>__final_judge_review.json"
+      ],
+      "fail_behavior": "final memo narrative remains blocked unless verdict is accept or explicit human approval is recorded; fallback may be used only for invalid JSON/schema recovery and must not override a valid unfavorable verdict"
+    }
+  ],
+  "global_rules": [
+    "Ollama is not a calculation engine.",
+    "All metrics, formulas, sums, percentages, ranks, slices and charts must remain deterministic.",
+    "Ollama may only write, review and polish narrative based on accepted evidence.",
+    "If Ollama is unavailable, deterministic package remains valid but narrative status is blocked_ollama_unavailable.",
+    "No final DOCX is generated or overwritten by this pipeline without explicit approval."
+    ,
+    "Judge gate follows evidence-first rules: FACT/CALCULATION require primary evidence, numeric claims require metric_ref, and secondary narrative alone is not enough for executive claims or recommendations.",
+    "Fallback judge is schema recovery only; it must use the same acceptance criteria and must not lower thresholds."
+  ]
+}

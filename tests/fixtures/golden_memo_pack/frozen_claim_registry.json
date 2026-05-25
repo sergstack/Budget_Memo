@@ -1,0 +1,22 @@
+{
+  "claims": [
+    {
+      "claim_id": "CLM-001",
+      "claim_text": "Plan equals 100 EUR",
+      "amount": "100",
+      "period": "2026-04",
+      "formula": "plan",
+      "strength": "weak",
+      "evidence_id": "EV-001"
+    },
+    {
+      "claim_id": "CLM-002",
+      "claim_text": "Fact equals 90 EUR",
+      "amount": "90",
+      "period": "2026-04",
+      "formula": "fact",
+      "strength": "interpretation",
+      "evidence_id": "EV-002"
+    }
+  ]
+}

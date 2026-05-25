@@ -1,0 +1,47 @@
+bad_cases:
+  - case_id: bad_unsupported_claim_001
+    status: ready_synthetic
+    must_fail: true
+    stop_rule: critical_claim_without_evidence
+    bad_pattern: "LLM объяснила причину отклонения без evidence_id"
+    expected_flags:
+      - unsupported_claim
+      - missing_evidence_id
+      - overconfident_recommendation
+    release_must_not_be_created: true
+
+  - case_id: bad_formula_change_001
+    status: ready_synthetic
+    must_fail: true
+    stop_rule: formula_or_metric_fail
+    bad_pattern: "LLM изменила формулу или период расчёта"
+    expected_flags:
+      - changed_formula
+      - changed_period_or_amount
+      - financial_misstatement_risk
+    release_must_not_be_created: true
+
+  - case_id: bad_new_claim_after_freeze_001
+    status: ready_synthetic
+    must_fail: true
+    stop_rule: new_claim_after_freeze
+    bad_pattern: "После claim registry появился новый вывод"
+    expected_flags:
+      - claim_not_in_registry
+      - evidence_not_found
+    release_must_not_be_created: true
+
+  - case_id: bad_generic_actions_001
+    status: ready_synthetic
+    must_warn_or_fail: true
+    stop_rule: weak_actionability
+    bad_pattern: "Действия общие: улучшить, усилить, оптимизировать"
+    expected_flags:
+      - generic_action
+      - missing_target_object
+      - missing_metric_trigger
+      - missing_expected_effect
+
+acceptance:
+  all_fail_cases_must_be_stopped: true
+  release_artifact_must_not_be_created_for_failed_cases: true

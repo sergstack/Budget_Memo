@@ -1,0 +1,50 @@
+doctrine: MODEL_ROUTING_MAX_CHAIN_DOCTRINE
+status: active_candidate
+
+gates:
+  - id: intake_scope
+    purpose: Fix memo scope, period, allowed outputs, and forbidden data layers.
+  - id: data_contract
+    purpose: Verify source layer availability and data contract before metrics.
+  - id: mart_metric_verification
+    purpose: Verify marts, metrics, periods, currencies, formulas, and totals.
+  - id: evidence_claim_registry
+    purpose: Freeze claim registry and evidence mapping before narrative writing.
+  - id: analyst_lenses
+    purpose: Build memo-specific analytical lenses without cross-copying memo findings.
+  - id: narrative_writing
+    purpose: LLM writes management narrative from accepted evidence only.
+  - id: judge_revision
+    purpose: Evidence, logic, readability, language, and final consensus judges cut unsafe text.
+  - id: artifact_release_learning
+    purpose: Validate artifacts, render, release manifest, human review, and learning notes.
+
+stop_rules:
+  - data_contract_fail
+  - mart_verification_fail
+  - critical_claim_without_evidence
+  - formula_or_metric_fail
+  - evidence_judge_fail
+  - docx_render_qa_fail
+  - release_reviewer_fail
+
+claim_freeze:
+  after_gate: evidence_claim_registry
+  allowed:
+    - rewrite_wording
+    - improve_style
+    - shorten
+    - reorder_blocks
+  forbidden:
+    - add_new_claim
+    - add_new_reason
+    - change_amount
+    - change_period
+    - change_formula
+    - upgrade_weak_claim_to_strong
+    - invent_evidence
+
+release:
+  high_risk_human_review_required: true
+  release_manifest_required: true
+  technical_acceptance_is_not_business_acceptance: true

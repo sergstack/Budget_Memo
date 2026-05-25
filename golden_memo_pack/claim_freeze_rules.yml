@@ -1,0 +1,29 @@
+claim_freeze:
+  after_gate: "Evidence & Claim Registry Gate"
+
+  allowed_changes:
+    - rewrite_wording
+    - improve_style
+    - shorten
+    - reorder_blocks
+    - improve_readability
+
+  forbidden_changes:
+    - add_new_claim
+    - add_new_reason
+    - change_amount
+    - change_period
+    - change_formula
+    - upgrade_weak_claim_to_strong
+    - invent_evidence
+
+  enforcement:
+    revised_memo_claims_must_be_subset_of: "claim_registry.json"
+    new_claim_without_registry_entry: "fail"
+    changed_formula: "fail"
+    changed_period: "fail"
+    changed_amount: "fail"
+    fake_evidence: "fail"
+
+  release_guard:
+    if_claim_freeze_failed: "do_not_create_release_artifact"

@@ -1,0 +1,17 @@
+*.csv binary
+*.tsv binary
+*.xlsx binary
+*.xls binary
+*.xlsm binary
+*.parquet binary
+*.feather binary
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+*.pkl binary
+*.zip binary
+*.7z binary
+*.rar binary
+*.docx binary
+*.pdf binary
+*.png binary
