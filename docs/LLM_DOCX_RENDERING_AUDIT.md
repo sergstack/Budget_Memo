@@ -50,4 +50,6 @@ MemoDisplayContract -> canonical renderer -> visual QA gate -> release manifest
 
 `src/memo_renderer.py` now defines a standalone canonical renderer v1 for synthetic/test MemoDisplayContract inputs. It is not wired into production generation yet.
 
+`scripts/diagnose_docx_visual_quality.py` now defines a read-only DOCX visual QA gate v1. It writes diagnostics under the requested output folder and is not wired into release workflow yet.
+
 Do not combine renderer consolidation with formula, schema, output-contract, prompt, QA-gate, or business-logic changes.

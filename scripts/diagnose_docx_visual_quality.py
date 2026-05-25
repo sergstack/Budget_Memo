@@ -274,6 +274,7 @@ def write_reports(out_dir: Path, target: Path, package_info: dict, page_info: di
         "target_docx": str(target),
         "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "verdicts": verdicts,
+        **verdicts,
         "package": package_info,
         "pages": page_info,
         "defects": [asdict(d) for d in defects],
@@ -360,6 +361,30 @@ No full business recalculation was performed.
     return payload
 
 
+def diagnose_docx_visual_quality(docx_path: Path, out_dir: Path, soffice_bin: str | None = None) -> dict:
+    target = Path(docx_path).expanduser().resolve()
+    out_dir = Path(out_dir).expanduser().resolve()
+    logs = out_dir / "logs"
+    pages = out_dir / "pages"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    logs.mkdir(parents=True, exist_ok=True)
+
+    defects: list[Defect] = []
+    commands = [
+        f"{sys.executable} scripts/diagnose_docx_visual_quality.py --docx {target} --out {out_dir}",
+    ]
+    if soffice_bin:
+        commands[0] = f"{commands[0]} --soffice-bin {soffice_bin}"
+    package_info = inspect_docx_package(target, defects)
+    soffice = find_soffice(soffice_bin)
+    if soffice:
+        commands.append(f"{soffice} --headless --convert-to pdf --outdir {out_dir} {target}")
+    pdf = convert_docx_to_pdf(target, out_dir, logs, soffice, defects) if target.exists() else None
+    rendered_pages = render_pdf_pages(pdf, pages, logs, defects) if pdf else []
+    page_info = analyze_pages(rendered_pages, defects)
+    return write_reports(out_dir, target, package_info, page_info, defects, commands)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -372,29 +397,16 @@ def main() -> int:
     parser.add_argument("--soffice-bin", default=None, help="Optional LibreOffice/soffice binary path.")
     args = parser.parse_args()
 
-    target = Path(args.docx).expanduser().resolve()
-    out_dir = Path(args.out).expanduser().resolve()
-    logs = out_dir / "logs"
-    pages = out_dir / "pages"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    logs.mkdir(parents=True, exist_ok=True)
-
-    defects: list[Defect] = []
-    commands = [
-        f"{sys.executable} scripts/diagnose_docx_visual_quality.py --docx {target} --out {out_dir}",
-    ]
-    package_info = inspect_docx_package(target, defects)
-    soffice = find_soffice(args.soffice_bin)
-    if soffice:
-        commands.append(f"{soffice} --headless --convert-to pdf --outdir {out_dir} {target}")
-    pdf = convert_docx_to_pdf(target, out_dir, logs, soffice, defects) if target.exists() else None
-    rendered_pages = render_pdf_pages(pdf, pages, logs, defects) if pdf else []
-    page_info = analyze_pages(rendered_pages, defects)
-    payload = write_reports(out_dir, target, package_info, page_info, defects, commands)
-    print(json.dumps({"verdicts": payload["verdicts"], "defects": len(payload["defects"]), "out": str(out_dir)}, ensure_ascii=False, indent=2))
+    payload = diagnose_docx_visual_quality(Path(args.docx), Path(args.out), args.soffice_bin)
+    print(
+        json.dumps(
+            {"verdicts": payload["verdicts"], "defects": len(payload["defects"]), "out": str(Path(args.out).expanduser().resolve())},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 1 if payload["release_blockers"] else 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
