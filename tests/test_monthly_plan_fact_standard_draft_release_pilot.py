@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -105,6 +106,32 @@ def test_production_generators_are_not_imported_or_called(
 
     imported = set(sys.modules) - before
     assert PRODUCTION_GENERATOR_MODULES.isdisjoint(imported)
+
+
+def test_script_executes_by_file_path_with_fixture_sources(tmp_path: Path) -> None:
+    source_paths = write_source_files(tmp_path / "sources")
+    out_dir = tmp_path / "out"
+    script = Path("scripts/run_monthly_plan_fact_standard_draft_release_pilot.py")
+    command = [
+        sys.executable,
+        str(script),
+        "--out",
+        str(out_dir),
+        "--readme",
+        str(source_paths.readme),
+        "--package-qa",
+        str(source_paths.package_qa),
+        "--evidence-map",
+        str(source_paths.evidence_map),
+        "--chart-metadata",
+        str(source_paths.chart_metadata),
+    ]
+
+    completed = subprocess.run(command, cwd=Path.cwd(), capture_output=True, text=True, check=False)
+
+    assert completed.returncode in {0, 2}
+    assert "ModuleNotFoundError" not in completed.stderr
+    assert (out_dir / pilot.PILOT_DIR_NAME / "release_manifest.json").exists()
 
 
 def write_source_files(root: Path) -> pilot.Memo02DraftSourcePaths:
