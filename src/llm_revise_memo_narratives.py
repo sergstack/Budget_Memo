@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.qa_ollama_outputs import QaContext, load_allowed_numbers, validate_text
-from src.regenerate_clean_memo_narratives import PROJECT_ROOT, TARGETS, MemoTarget, markdown_to_docx
+from src.regenerate_clean_memo_narratives import PROJECT_ROOT, TARGETS, MemoTarget
 from src.run_ollama_memo_pipeline import (
     OllamaUnavailable,
     build_sanitized_input_package,
@@ -238,6 +238,11 @@ SOURCES:
 """
 
 
+def revisor_output_paths(target: MemoTarget, output_dir: Path) -> tuple[Path, Path]:
+    stem = f"{target.direction}__{target.depth}__llm_revisor"
+    return output_dir / f"{stem}.md", output_dir / f"{stem}_qa.json"
+
+
 def revise_target(target: MemoTarget, output_dir: Path, routing: dict, llm_role: str) -> dict:
     inputs = pipeline_inputs(target, output_dir)
     package, sanitization_report = build_sanitized_input_package(inputs)
@@ -279,22 +284,25 @@ def revise_target(target: MemoTarget, output_dir: Path, routing: dict, llm_role:
             break
         current_md = revised
         feedback = compact_qa_feedback(qa)
-    target.md_path.write_text(final_text, encoding="utf-8")
-    markdown_to_docx(final_text, target.docx_path)
+    draft_md_path, qa_path = revisor_output_paths(target, output_dir)
+    draft_md_path.write_text(final_text, encoding="utf-8")
     result = {
         "direction": target.direction,
         "depth": target.depth,
-        "md_path": str(target.md_path.relative_to(PROJECT_ROOT)),
-        "docx_path": str(target.docx_path.relative_to(PROJECT_ROOT)),
+        "draft_md_path": str(draft_md_path.relative_to(PROJECT_ROOT)),
+        "qa_path": str(qa_path.relative_to(PROJECT_ROOT)),
+        "accepted_final_md_path": str(target.md_path.relative_to(PROJECT_ROOT)),
+        "accepted_final_docx_path": str(target.docx_path.relative_to(PROJECT_ROOT)),
+        "final_artifacts_modified": False,
         "text_qa_status": final_qa.get("qa_status"),
         "attempts": attempts,
         "final_model_metadata": final_metadata,
         "sanitization_report": sanitization_report,
         "authoring_mode": "llm_revisor",
         "llm_role": llm_role,
+        "output_policy": "draft_and_qa_only_no_final_write",
     }
-    (output_dir / f"{target.direction}__{target.depth}__llm_revisor.md").write_text(final_text, encoding="utf-8")
-    (output_dir / f"{target.direction}__{target.depth}__llm_revisor_qa.json").write_text(
+    qa_path.write_text(
         json.dumps(result, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
