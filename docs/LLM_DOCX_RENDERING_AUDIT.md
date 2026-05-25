@@ -48,4 +48,6 @@ MemoDisplayContract -> canonical renderer -> visual QA gate -> release manifest
 
 `src/memo_display_contract.py` now defines the standalone MemoDisplayContract v1 layer. It is not wired into DOCX rendering yet.
 
+`src/memo_renderer.py` now defines a standalone canonical renderer v1 for synthetic/test MemoDisplayContract inputs. It is not wired into production generation yet.
+
 Do not combine renderer consolidation with formula, schema, output-contract, prompt, QA-gate, or business-logic changes.
