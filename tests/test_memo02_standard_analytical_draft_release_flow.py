@@ -101,8 +101,29 @@ def test_analytical_docx_visible_body_is_russian_without_forbidden_terms(
     ]:
         assert heading in text
     assert_no_forbidden_visible_english(text)
-    for term in ["DOCX", "Git", "--out", "memo02 standard"]:
+    for term in [
+        "narrative",
+        "memo02_standard_final_text",
+        "standard_final_chart_metadata",
+        "evidence_map",
+        "package_qa",
+        "chart_id",
+        "planning_quality_frequency_impact",
+        "DOCX",
+        "Git",
+        "--out",
+        "memo02 standard",
+    ]:
         assert term not in text
+    for term in [
+        "управленческий текст",
+        "Идентификатор графика",
+        "финальный текст стандартной записки",
+        "карта подтверждений",
+        "реестр графиков стандартного пакета",
+        "проверка пакета",
+    ]:
+        assert term in text
 
 
 def test_chart_interpretations_and_metadata_are_reflected_in_contract(

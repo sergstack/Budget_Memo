@@ -169,12 +169,12 @@ def run_memo02_standard_analytical_draft_release_flow(
 
 
 def build_memo02_standard_analytical_contract(
-    narrative: str,
+    source_text: str,
     chart_rows: list[dict],
     chart_interpretations: list[dict],
     period: str,
 ) -> MemoDisplayContract:
-    findings = _extract_key_findings(narrative)
+    findings = _extract_key_findings(source_text)
     chart_blocks = [
         MemoBlock(
             block_type="chart",
@@ -189,7 +189,7 @@ def build_memo02_standard_analytical_contract(
     ]
     chart_table_rows = [
         [
-            str(row.get("chart_id", "")),
+            _chart_display_name(row),
             str(row.get("title_ru", "")),
             str(row.get("source", "")),
             str(row.get("limitation", "")),
@@ -235,9 +235,9 @@ def build_memo02_standard_analytical_contract(
                         table=MemoTable(
                             headers=["Источник", "Назначение"],
                             rows=[
-                                ["Финальный текст", "Базовый управленческий narrative без нового расчёта"],
+                                ["Финальный текст стандартной записки", "Базовый управленческий текст без нового расчёта"],
                                 ["Карта подтверждений", "Трассировка фактов, ограничений и источников"],
-                                ["Реестр графиков", "Названия, изображения, источники и ограничения графиков"],
+                                ["Реестр графиков стандартного пакета", "Названия, изображения, источники и ограничения графиков"],
                                 ["Проверка пакета", "Подтверждение статуса исходного пакета"],
                             ],
                         ),
@@ -270,7 +270,7 @@ def build_memo02_standard_analytical_contract(
                     MemoBlock(
                         block_type="table",
                         table=MemoTable(
-                            headers=["ID графика", "Название", "Источник", "Ограничение"],
+                            headers=["Идентификатор графика", "Название", "Источник", "Ограничение"],
                             rows=chart_table_rows,
                             caption="Реестр графиков перенесён из принятого стандартного пакета без пересборки изображений.",
                         ),
@@ -378,6 +378,13 @@ def _chart_interpretation(row: dict) -> dict:
             f"Источник: {source}. Ограничение: {limitation}"
         ),
     }
+
+
+def _chart_display_name(row: dict) -> str:
+    title = str(row.get("title_ru", "")).strip()
+    if title:
+        return title
+    return "График стандартного пакета"
 
 
 def _extract_key_findings(narrative: str) -> list[str]:
