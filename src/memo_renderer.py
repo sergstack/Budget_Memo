@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from docx import Document
+from docx.shared import Inches
 
 from src.memo_display_contract import (
     MemoBlock,
@@ -66,6 +67,7 @@ def _render_block(doc: Document, block: MemoBlock) -> None:
         _render_table(doc, block.table)
     elif block.block_type == "chart" and block.chart is not None:
         doc.add_paragraph(f"График: {block.chart.title}")
+        _render_chart_image(doc, block.chart.source_ref)
         if block.chart.caption:
             doc.add_paragraph(block.chart.caption)
     elif block.block_type == "limitation_box" and block.limitation is not None:
@@ -104,3 +106,14 @@ def _render_table(doc: Document, memo_table: MemoTable | None) -> None:
 
 def _render_marker(marker: str) -> str:
     return {"candidate": "кандидат", "final": "финал"}.get(marker, marker)
+
+
+def _render_chart_image(doc: Document, source_ref: str) -> None:
+    if not source_ref:
+        return
+    image_path = Path(source_ref)
+    if not image_path.is_file():
+        return
+    if image_path.suffix.lower() not in {".png", ".jpg", ".jpeg"}:
+        return
+    doc.add_picture(str(image_path), width=Inches(6.1))

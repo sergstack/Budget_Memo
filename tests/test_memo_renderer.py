@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 from pathlib import Path
+import zipfile
 
 import pytest
 from docx import Document
@@ -161,3 +163,20 @@ def test_renderer_writes_only_output_path_in_tmp_path(tmp_path: Path) -> None:
     after = sorted(path.relative_to(tmp_path) for path in tmp_path.rglob("*"))
     assert before == []
     assert after == [Path("memo.docx")]
+
+
+def test_renderer_embeds_chart_image_when_source_ref_is_image_path(tmp_path: Path) -> None:
+    image_path = tmp_path / "chart.png"
+    image_path.write_bytes(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="))
+    contract = synthetic_contract()
+    chart_block = contract.sections[0].blocks[4]
+    contract.sections[0].blocks[4] = MemoBlock(
+        block_type="chart",
+        chart=MemoChart(chart_id=chart_block.chart.chart_id, title=chart_block.chart.title, source_ref=str(image_path)),
+    )
+
+    output_path = render_memo_contract_to_docx(contract, tmp_path / "memo.docx")
+
+    with zipfile.ZipFile(output_path) as archive:
+        media = [name for name in archive.namelist() if name.startswith("word/media/")]
+    assert media
