@@ -51,6 +51,7 @@ Changes touching source code, contracts, schemas, config, prompts, data-dependen
 Full pipeline, report generation, and Ollama/live LLM generation require explicit approval before execution.
 
 CI expansion beyond public data-free checks must not add local-data, report-generation, or Ollama/live LLM lanes without explicit approval and a validation design.
+Local regression, artifact validation, and performance/refactor work must follow `docs/local_regression_plan.md`, `docs/artifact_validation_matrix.md`, and `docs/performance_refactor_gate.md`.
 
 ## Documentation Consolidation Policy
 

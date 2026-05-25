@@ -9,17 +9,26 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = {
     "docs/test_strategy_matrix.md",
     "docs/ci_matrix.md",
+    "docs/local_regression_plan.md",
+    "docs/artifact_validation_matrix.md",
+    "docs/performance_refactor_gate.md",
 }
 
 REQUIRED_MARKERS = {
     "TESTING.md": [
         "docs/test_strategy_matrix.md",
         "docs/ci_matrix.md",
+        "docs/local_regression_plan.md",
+        "docs/artifact_validation_matrix.md",
+        "docs/performance_refactor_gate.md",
         "not the default public CI command",
     ],
     "docs/developer_workflow.md": [
         "docs/test_strategy_matrix.md",
         "docs/ci_matrix.md",
+        "docs/local_regression_plan.md",
+        "docs/artifact_validation_matrix.md",
+        "docs/performance_refactor_gate.md",
     ],
     "docs/reviewer_quickstart.md": [
         "docs/test_strategy_matrix.md",
@@ -32,13 +41,51 @@ REQUIRED_MARKERS = {
         "ollama_live_llm",
         "contract_regression",
         "performance_future",
+        "docs/local_regression_plan.md",
+        "docs/artifact_validation_matrix.md",
+        "docs/performance_refactor_gate.md",
         "Full `python3 -m unittest discover -s tests -q` is not public-data-free by default.",
     ],
     "docs/ci_matrix.md": [
         "current GitHub Actions workflow",
         "public_data_free",
+        "Local regression lanes are documented but not activated in GitHub CI.",
+        "docs/local_regression_plan.md",
+        "docs/artifact_validation_matrix.md",
+        "docs/performance_refactor_gate.md",
         "python scripts/check_test_strategy.py",
         "python -m unittest tests.test_test_strategy -q",
+    ],
+    "docs/local_regression_plan.md": [
+        "stage_contract_validation",
+        "mart_contract_validation",
+        "report_artifact_validation",
+        "render_docx_pdf_validation",
+        "ollama_live_llm_validation",
+        "end_to_end_local_smoke",
+        "must not run in GitHub public CI",
+        "require explicit task authorization",
+    ],
+    "docs/artifact_validation_matrix.md": [
+        "These artifact folders are local/ignored and must not be committed.",
+        "01_raw/",
+        "02_stage/",
+        "03_marts/",
+        "04_charts/",
+        "04_signals/",
+        "05_evidence/",
+        "05_llm_package/",
+        "06_reports/",
+        "07_qa/",
+        "99_archive/",
+    ],
+    "docs/performance_refactor_gate.md": [
+        "low_risk_docs_or_checker_only",
+        "medium_risk_pipeline_io",
+        "high_risk_formula_or_schema",
+        "blocked_without_business_approval",
+        "Data-free checks pass.",
+        "Local regression checks are selected if the change is data-dependent.",
     ],
 }
 
@@ -54,6 +101,9 @@ DISALLOWED_WORKFLOW_MARKERS = {
     "build_report.py",
     "build_docx_report.py",
     "verify_accepted_ollama_report_packages.py",
+    "local_regression_plan.md",
+    "artifact_validation_matrix.md",
+    "performance_refactor_gate.md",
 }
 
 REQUIRED_WORKFLOW_MARKERS = {

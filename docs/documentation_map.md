@@ -21,6 +21,9 @@ Current entrypoints for public reviewers and repository operators:
 - `docs/release_checklist.md`: PR/release readiness checklist.
 - `docs/test_strategy_matrix.md`: test profile ownership and validation boundaries.
 - `docs/ci_matrix.md`: CI lane policy and future CI expansion rules.
+- `docs/local_regression_plan.md`: local-only regression profiles and stop rules.
+- `docs/artifact_validation_matrix.md`: local artifact layer validation ownership.
+- `docs/performance_refactor_gate.md`: approval gate for future performance/refactor work.
 - `docs/public_clone_smoke_check.md`: public clone validation path.
 - `docs/repo_cleanup_policy.md`: cleanup rules and deletion constraints.
 - `docs/repo_governance.md`: repository governance, approval gates, and data/security rules.

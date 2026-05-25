@@ -33,6 +33,7 @@ Record pass/fail output in the PR.
 - [ ] PR states which test profile was used.
 - [ ] PR states which test profiles were skipped and why.
 - [ ] CI lane choice matches `docs/test_strategy_matrix.md` and `docs/ci_matrix.md`.
+- [ ] Local regression scope, if any, matches `docs/local_regression_plan.md`, `docs/artifact_validation_matrix.md`, and `docs/performance_refactor_gate.md`.
 
 ## Data-Dependent Checks
 

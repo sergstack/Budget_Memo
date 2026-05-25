@@ -55,6 +55,7 @@ Owner/reviewer expectations: repo maintainers and reviewers verify these checks 
 ## local_data_dependent
 
 Purpose: validate pipeline behavior against local ignored corporate data and generated stage/mart layers.
+Detailed local scope is defined in `docs/local_regression_plan.md` and `docs/artifact_validation_matrix.md`.
 
 What it proves:
 
@@ -86,10 +87,12 @@ Allowed in GitHub CI: no.
 May write ignored artifacts: yes.
 
 Owner/reviewer expectations: data/pipeline owner verifies input layers, output layers, periods, currencies, and reconciliation assumptions.
+Before performance or refactor work, apply `docs/performance_refactor_gate.md`.
 
 ## report_generation
 
 Purpose: validate memo/report package generation and rendering outputs.
+Detailed artifact expectations are defined in `docs/local_regression_plan.md` and `docs/artifact_validation_matrix.md`.
 
 What it proves:
 
@@ -122,6 +125,7 @@ Owner/reviewer expectations: report owner verifies generated artifacts, render Q
 ## ollama_live_llm
 
 Purpose: validate live Ollama/LLM routing and memo synthesis behavior.
+Local authorization and stop rules are defined in `docs/local_regression_plan.md`.
 
 What it proves:
 
@@ -150,6 +154,7 @@ Owner/reviewer expectations: memo/report owner reviews grounding, unsupported cl
 ## contract_regression
 
 Purpose: validate stable contracts, doctrine, and fixtures without broad pipeline execution.
+Data-dependent contract regression must use `docs/local_regression_plan.md`; data-free contract candidates must be proven safe before CI inclusion.
 
 What it proves:
 
@@ -182,6 +187,7 @@ Owner/reviewer expectations: contract owner verifies that no schemas, prompts, f
 ## performance_future
 
 Purpose: create a future lane for runtime and scaling risk without changing business logic.
+Future performance work must pass `docs/performance_refactor_gate.md` before implementation.
 
 What it proves:
 

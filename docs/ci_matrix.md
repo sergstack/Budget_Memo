@@ -2,6 +2,8 @@
 
 This document defines the current CI policy and future CI lanes. It does not add local data, report-generation, or Ollama lanes.
 
+Local regression lanes are documented but not activated in GitHub CI. See `docs/local_regression_plan.md`, `docs/artifact_validation_matrix.md`, and `docs/performance_refactor_gate.md`.
+
 ## Current GitHub CI
 
 Current GitHub Actions workflow:
