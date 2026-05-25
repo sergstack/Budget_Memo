@@ -1,5 +1,9 @@
 # Golden Memo Pack
 
+Status: preserved duplicate pending canonical owner review.
+
+This governance-package copy and root `golden_memo_pack/` are both preserved for now. Do not delete or move either folder in this batch. Future consolidation must be separate and reviewed. See `../../docs/documentation_map.md` and `../../docs/documentation_consolidation_plan.md`.
+
 Назначение: regression/evaluation layer для фабрики аналитических записок.
 
 Пакет проверяет:

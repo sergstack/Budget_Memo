@@ -1,5 +1,9 @@
 # PROJECT_INSTRUCTIONS.md — [Analytics]
 
+Status: current project-level entrypoint.
+
+This file is the active project-level instructions entrypoint. `99_docs/PROJECT_INSTRUCTIONS.md` is a preserved governance copy / duplicate pending future consolidation. Keep both files aligned until a later explicit consolidation task selects a single canonical owner. Do not delete either file in this batch. See `docs/documentation_map.md` and `docs/documentation_consolidation_plan.md`.
+
 ## Role of the project
 
 `[Analytics]` is the working project for direct analytical work: calculations, data interpretation, management analysis, financial audit logic, metric explanation, analytical notes, and evidence-based conclusions.
