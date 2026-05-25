@@ -1,0 +1,56 @@
+name: Repo hygiene task
+description: Request a repository safety, CI, or governance maintenance task.
+title: "[Repo hygiene]: "
+labels: ["repo-hygiene"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep repo hygiene tasks bounded. Do not combine governance cleanup with pipeline, formula, schema, or report-generation changes.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What repository hygiene outcome is required?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and allowed files
+      description: List the exact files or folders allowed for this task.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden actions
+      description: Include any source, data, artifact, pipeline, or remote actions that must not occur.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety checks
+      description: Which safety checks must pass before commit or PR?
+      value: |
+        git status --short
+        python3 scripts/check_repo_public_safety.py
+        python3 -m unittest tests.test_repo_public_safety -q
+        python3 scripts/verify_memo_factory_quality_gates.py --config config/memo_factory_quality_gates.yml
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define pass/fail conditions.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / limitations
+      description: Note residual risk, skipped checks, or manual review needed.
+    validations:
+      required: true

@@ -8,13 +8,20 @@ Current entrypoints for public reviewers and repository operators:
 
 - `README.md`: public repository scope, project overview, safe public checks, local pipeline commands.
 - `TESTING.md`: public data-free checks vs local data-dependent, report-generation, and Ollama-dependent checks.
+- `CONTRIBUTING.md`: contributor scope, branch/PR workflow, forbidden actions, and safe check requirements.
+- `CHANGELOG.md`: lightweight repository change history.
+- `SECURITY.md`: public repository security policy and accidental exposure response.
 - `AGENTS.md`: project guardrails for safe Codex work.
 - `SPEC.md`: current stage and mart contracts, formulas, output contract notes, and risks.
 - `PROJECT_STATUS.md`: current project status and residual risks.
 - `PROJECT_ARCHITECTURE_SUMMARY.md`: layer architecture and accepted pipeline boundaries.
 - `PROJECT_ARTIFACT_INVENTORY.md`: inventory of accepted local artifacts and ignored generated layers.
+- `docs/developer_workflow.md`: public clone and local contributor workflow.
+- `docs/reviewer_quickstart.md`: external reviewer orientation and safe commands.
+- `docs/release_checklist.md`: PR/release readiness checklist.
 - `docs/public_clone_smoke_check.md`: public clone validation path.
 - `docs/repo_cleanup_policy.md`: cleanup rules and deletion constraints.
+- `docs/repo_governance.md`: repository governance, approval gates, and data/security rules.
 - `docs/repo_hardening_audit.md`: repo hardening v1 audit.
 
 ## active_planning_docs
@@ -67,6 +74,8 @@ Governance, QA, release, and memo-factory doctrine:
 - `99_docs/golden_memo_pack/`
 - `docs/ANALYTICAL_MEMO_VISUAL_STANDARD.md`
 - `docs/DOCX_VISUAL_QA_GATE.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+- `.github/ISSUE_TEMPLATE/`
 
 Known duplicate: `PROJECT_INSTRUCTIONS.md` and `99_docs/PROJECT_INSTRUCTIONS.md` are intentionally preserved and now include ownership notes. Known duplicate: root `golden_memo_pack/` and `99_docs/golden_memo_pack/` are intentionally preserved and their README files now include ownership notes. Keep both copies until a separate consolidation task selects the canonical owner.
 
@@ -98,5 +107,7 @@ Candidates for later documentation-only consolidation:
 - Add archive labels to historical handoff docs before considering deletion.
 
 Stage 2.3-2.5 ownership labels have been added for the project-instructions duplicate group, the golden memo pack duplicate group, and the memo-build task backlog README. This is labeling only; no deletion, moving, or consolidation execution has occurred.
+
+Stage 3 governance and developer-experience docs have been added as current navigation and review aids. They do not replace business doctrine, schemas, contracts, prompts, or historical handoff documents.
 
 Any consolidation must be a separate reviewed task. Do not combine it with business logic, formula, schema, or output contract changes.
