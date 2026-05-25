@@ -247,6 +247,16 @@ COLUMN_NAME_MAPPING_RU = {
     "timing_limitation": "Ограничение timing",
     "currency_share_in_legal_entity": "Доля валюты в юрлице, %",
     "legal_entity_share_in_currency": "Доля юрлица в валюте, %",
+    "yoy_source_slice": "Источник YoY",
+    "yoy_metric_grain": "Гранулярность YoY",
+    "mom_source_slice": "Источник MoM",
+    "mom_metric_grain": "Гранулярность MoM",
+    "mom_signal_source_slice": "Источник классификации MoM",
+    "mom_signal_metric_grain": "Гранулярность классификации MoM",
+    "localization_source_slice": "Источник локализации",
+    "localization_metric_grain": "Гранулярность локализации",
+    "planning_source_slice": "Источник планового риска",
+    "planning_metric_grain": "Гранулярность планового риска",
 }
 
 SHEET_NAMES = {
@@ -1094,6 +1104,129 @@ def build_all_slices(full: pd.DataFrame, flow: pd.DataFrame) -> dict[str, pd.Dat
     return slices
 
 
+def merge_analysis_metrics(
+    main_full: pd.DataFrame,
+    source: pd.DataFrame,
+    keys: list[str],
+    metric_cols: list[str],
+    source_col: str,
+    source_slice: str,
+    grain_col: str,
+    grain: str,
+) -> pd.DataFrame:
+    result = main_full.copy()
+    missing = sorted(set(keys + metric_cols) - set(source.columns))
+    if missing:
+        raise ValueError(f"Missing enrichment columns in {source_slice}: {missing}")
+    duplicate_keys = source.duplicated(keys, keep=False)
+    if duplicate_keys.any():
+        raise ValueError(f"Duplicate enrichment keys in {source_slice}: {int(duplicate_keys.sum())}")
+
+    payload = source[keys + metric_cols].copy()
+    payload[source_col] = source_slice
+    payload[grain_col] = grain
+    before_rows = len(result)
+    result = result.merge(payload, on=keys, how="left", suffixes=("", "__analysis_metric"))
+    for col in metric_cols:
+        enriched_col = f"{col}__analysis_metric"
+        if enriched_col in result.columns:
+            result[col] = result[enriched_col].combine_first(result[col])
+            result = result.drop(columns=[enriched_col])
+    if len(result) != before_rows:
+        raise ValueError(f"Row count changed while joining {source_slice}: {before_rows} -> {len(result)}")
+    return result
+
+
+def enrich_main_full_with_analysis_metrics(main_full: pd.DataFrame, slices: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    result = main_full.copy()
+    pre_enrichment_row_count = len(main_full)
+
+    month_keys = ["period_month", "period_year", "article", "cfo"]
+    result = merge_analysis_metrics(
+        result,
+        slices["slice_yoy_article_cfo_month"],
+        month_keys,
+        [
+            "current_fact_eur",
+            "prior_year_fact_eur",
+            "yoy_delta_eur",
+            "abs_yoy_delta_eur",
+            "yoy_pct",
+            "yoy_delta_to_in_pct",
+            "abs_yoy_delta_to_in_pct",
+            "prior_year_available_flag",
+            "prior_year_month_count",
+            "weak_yoy_base_flag",
+            "no_yoy_base_flag",
+            "yoy_rank",
+        ],
+        "yoy_source_slice",
+        "slice_yoy_article_cfo_month",
+        "yoy_metric_grain",
+        "article+cfo+month",
+    )
+    result = merge_analysis_metrics(
+        result,
+        slices["slice_mom_article_cfo_month"],
+        month_keys,
+        [
+            "current_month_fact_eur",
+            "previous_month_fact_eur",
+            "mom_delta_eur",
+            "abs_mom_delta_eur",
+            "mom_pct",
+            "mom_delta_to_in_pct",
+            "abs_mom_delta_to_in_pct",
+            "mom_rank",
+        ],
+        "mom_source_slice",
+        "slice_mom_article_cfo_month",
+        "mom_metric_grain",
+        "article+cfo+month",
+    )
+    result = merge_analysis_metrics(
+        result,
+        slices["slice_mom_article_cfo"],
+        ["article", "cfo"],
+        ["mom_signal_type"],
+        "mom_signal_source_slice",
+        "slice_mom_article_cfo",
+        "mom_signal_metric_grain",
+        "article+cfo",
+    )
+    result = merge_analysis_metrics(
+        result,
+        slices["slice_localization_article_cfo"],
+        ["article", "cfo"],
+        [
+            "article_abs_delta_eur",
+            "cfo_abs_delta_eur",
+            "cfo_share_in_article_delta",
+            "top1_cfo_share",
+            "top3_cfo_share",
+            "concentration_type",
+            "owner_candidate",
+            "owner_route_status",
+        ],
+        "localization_source_slice",
+        "slice_localization_article_cfo",
+        "localization_metric_grain",
+        "article+cfo",
+    )
+    result = merge_analysis_metrics(
+        result,
+        slices["slice_plan_vs_history_article_cfo"],
+        ["article", "cfo"],
+        [],
+        "planning_source_slice",
+        "slice_plan_vs_history_article_cfo",
+        "planning_metric_grain",
+        "article+cfo",
+    )
+    result.attrs["pre_enrichment_row_count"] = pre_enrichment_row_count
+    return result
+
+
 def write_parquets(main_full: pd.DataFrame, flow: pd.DataFrame, catalog: pd.DataFrame, compact: pd.DataFrame, slices: dict[str, pd.DataFrame]) -> None:
     main_full.to_parquet(TECHNICAL_OUTPUTS["mart_main_full_budget"], index=False)
     flow.to_parquet(TECHNICAL_OUTPUTS["mart_flow_base_month"], index=False)
@@ -1555,6 +1688,77 @@ def validate_legal_currency_excel_sheets(path: Path) -> dict[str, bool]:
     }
 
 
+def metric_values_match_source(
+    main_full: pd.DataFrame,
+    source: pd.DataFrame,
+    keys: list[str],
+    metrics: list[str],
+) -> bool:
+    missing = sorted((set(keys) | set(metrics)) - set(main_full.columns)) + sorted((set(keys) | set(metrics)) - set(source.columns))
+    if missing:
+        return False
+    if source.duplicated(keys, keep=False).any():
+        return False
+    source_payload = source[keys + metrics].rename(columns={col: f"{col}__source" for col in metrics})
+    joined = main_full[keys + metrics].merge(source_payload, on=keys, how="inner")
+    if joined.empty:
+        return False
+    for metric in metrics:
+        left = pd.to_numeric(joined[metric], errors="coerce")
+        right = pd.to_numeric(joined[f"{metric}__source"], errors="coerce")
+        both_na = left.isna() & right.isna()
+        diff_ok = (left - right).abs().le(0.01).fillna(False)
+        if not bool((both_na | diff_ok).all()):
+            return False
+    return True
+
+
+def validate_analysis_metric_enrichment(main_full: pd.DataFrame, slices: dict[str, pd.DataFrame], path: Path) -> dict[str, bool]:
+    required_yoy_headers = {
+        "Факт прошлого года, EUR",
+        "YoY отклонение, EUR",
+        "ABS YoY отклонение, EUR",
+        "YoY, %",
+    }
+    required_mom_headers = {
+        "Факт предыдущего месяца, EUR",
+        "MoM отклонение, EUR",
+        "ABS MoM отклонение, EUR",
+        "MoM, %",
+    }
+    required_metadata_headers = {
+        "Источник YoY",
+        "Гранулярность YoY",
+        "Источник MoM",
+        "Гранулярность MoM",
+        "Источник локализации",
+        "Гранулярность локализации",
+        "Источник планового риска",
+        "Гранулярность планового риска",
+    }
+    xl = pd.ExcelFile(path)
+    main_headers = set(pd.read_excel(path, sheet_name=SHEET_NAMES["mart_main_full_budget"], nrows=0).columns)
+    expected_sheets = {
+        SHEET_NAMES["yoy"],
+        SHEET_NAMES["mom"],
+        SHEET_NAMES["localization"],
+        SHEET_NAMES["planning_risk"],
+    }
+    month_keys = ["period_month", "period_year", "article", "cfo"]
+    yoy_metrics = ["prior_year_fact_eur", "yoy_delta_eur", "abs_yoy_delta_eur", "yoy_pct"]
+    mom_metrics = ["previous_month_fact_eur", "mom_delta_eur", "abs_mom_delta_eur", "mom_pct"]
+    return {
+        "main_full_enriched_row_count_preserved": int(main_full.attrs.get("pre_enrichment_row_count", -1)) == len(main_full),
+        "main_full_has_yoy_metrics": required_yoy_headers.issubset(main_headers),
+        "main_full_has_mom_metrics": required_mom_headers.issubset(main_headers),
+        "main_full_has_analysis_metric_grain_metadata": required_metadata_headers.issubset(main_headers),
+        "yoy_metrics_match_source_slice": metric_values_match_source(main_full, slices["slice_yoy_article_cfo_month"], month_keys, yoy_metrics),
+        "mom_metrics_match_source_slice": metric_values_match_source(main_full, slices["slice_mom_article_cfo_month"], month_keys, mom_metrics),
+        "analysis_metric_joins_no_duplicate_explosion": int(main_full.attrs.get("pre_enrichment_row_count", -1)) == len(main_full),
+        "management_analysis_sheets_preserved": expected_sheets.issubset(set(xl.sheet_names)),
+    }
+
+
 def write_configs() -> None:
     write_json(MARTS_DIR / "column_name_mapping_ru.json", COLUMN_NAME_MAPPING_RU)
     write_json(MARTS_DIR / "mart_threshold_config.json", THRESHOLDS)
@@ -1574,6 +1778,7 @@ def write_qa(
     excel_ok, excel_bad = validate_excel_columns(MARTS_DIR / "mart_full_package.xlsx")
     legal_currency_excel_checks = validate_legal_currency_excel_sheets(MARTS_DIR / "mart_full_package.xlsx")
     general_excel_checks = validate_general_excel_qa(MARTS_DIR / "mart_full_package.xlsx")
+    analysis_metric_checks = validate_analysis_metric_enrichment(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
     top_expense = slices["slice_plan_fact_article"].sort_values("abs_delta_eur", ascending=False).head(50)
     service_in_top = bool(top_expense["article"].isin(SERVICE_VALUES).any()) if "article" in top_expense else False
     compact_trace = bool(
@@ -1595,6 +1800,7 @@ def write_qa(
         "excel_workbook_has_russian_column_names": excel_ok,
         **legal_currency_excel_checks,
         **general_excel_checks,
+        **analysis_metric_checks,
         "service_rows_excluded_from_top_expense_deviations": not service_in_top,
         "in_used_as_denominator_for_proportionality_metrics": bool({"plan_to_in_pct", "fact_to_in_pct", "delta_to_in_pct", "abs_delta_to_in_pct"}.issubset(main_full.columns)),
         "in_out_not_summed_across_article_rows": bool(flow["in_out_eur"].notna().any() and "in_out_eur" not in slices["slice_plan_fact_article"].columns),
@@ -1620,6 +1826,7 @@ def write_qa(
         "excel_bad_headers": excel_bad,
         "legal_currency_excel_checks": legal_currency_excel_checks,
         "general_excel_checks": general_excel_checks,
+        "analysis_metric_checks": analysis_metric_checks,
         "row_counts": {
             "mart_main_full_budget": int(len(main_full)),
             "mart_flow_base_month": int(len(flow)),
@@ -1659,8 +1866,9 @@ def build_mart_layer() -> dict[str, Any]:
     stage = read_stage()
     stage["row_role"] = assign_row_roles(stage)
     flow = build_flow_base(stage)
-    main_full = build_main_full(stage, flow)
-    slices = build_all_slices(main_full, flow)
+    main_full_core = build_main_full(stage, flow)
+    slices = build_all_slices(main_full_core, flow)
+    main_full = enrich_main_full_with_analysis_metrics(main_full_core, slices)
     catalog = build_signal_catalog(slices)
     compact = build_compact(catalog)
     write_parquets(main_full, flow, catalog, compact, slices)
