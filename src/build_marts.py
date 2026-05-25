@@ -10,6 +10,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+try:
+    from src.main import ACTUALS_CLOSED_THROUGH_MONTH
+except ModuleNotFoundError:  # pragma: no cover - supports `python3 src/build_marts.py`
+    from main import ACTUALS_CLOSED_THROUGH_MONTH
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 STAGE_SOURCE = PROJECT_ROOT / "02_stage" / "01_full_stage.csv"
@@ -108,6 +113,8 @@ COLUMN_NAME_MAPPING_RU = {
     "out_to_in_pct": "OUT к IN, %",
     "in_out_margin_pct": "IN-OUT маржа, %",
     "flow_base_status": "Статус IN/OUT базы",
+    "flow_value_source": "Источник IN/OUT базы",
+    "flow_uses_plan_fallback_flag": "IN/OUT использует план",
     "weak_in_base_flag": "Слабая IN база",
     "weak_flow_base_flag": "Слабая flow база",
     "plan_to_in_pct": "План к IN, %",
@@ -437,11 +444,21 @@ def build_flow_base(stage: pd.DataFrame) -> pd.DataFrame:
                 "out_to_in_pct",
                 "in_out_margin_pct",
                 "flow_base_status",
+                "flow_value_source",
+                "flow_uses_plan_fallback_flag",
                 "weak_in_base_flag",
                 "weak_flow_base_flag",
             ]
         )
-    service["flow_value_eur"] = service["fact_eur"].where(service["fact_eur"].notna() & service["fact_eur"].ne(0), service["plan_eur"])
+    fact_available = service["fact_eur"].notna() & service["fact_eur"].ne(0)
+    plan_available = service["plan_eur"].notna() & service["plan_eur"].ne(0)
+    service["flow_value_source"] = np.select(
+        [fact_available, plan_available],
+        ["fact", "plan_fallback"],
+        default="missing",
+    )
+    service["flow_uses_plan_fallback_flag"] = service["flow_value_source"].eq("plan_fallback").astype(int)
+    service["flow_value_eur"] = service["fact_eur"].where(fact_available, service["plan_eur"])
     pivot = service.pivot_table(
         index=["period_month", "period_type"],
         columns="article",
@@ -449,15 +466,24 @@ def build_flow_base(stage: pd.DataFrame) -> pd.DataFrame:
         aggfunc="sum",
         fill_value=np.nan,
     ).reset_index()
+    source_status = service.groupby(["period_month", "period_type"], as_index=False, dropna=False).agg(
+        flow_value_source=("flow_value_source", join_unique),
+        flow_uses_plan_fallback_flag=("flow_uses_plan_fallback_flag", "max"),
+    )
     for col in SERVICE_VALUES:
         if col not in pivot.columns:
             pivot[col] = np.nan
     flow = pivot.rename(columns={"IN": "in_eur", "OUT": "out_eur", "IN-OUT": "in_out_eur"})
+    flow = flow.merge(source_status, on=["period_month", "period_type"], how="left")
     flow["out_to_in_pct"] = safe_div(flow["out_eur"], flow["in_eur"])
     flow["in_out_margin_pct"] = safe_div(flow["in_out_eur"], flow["in_eur"])
     flow["weak_in_base_flag"] = flow["in_eur"].abs().lt(THRESHOLDS["weak_base_threshold_eur"]).fillna(True).astype(int)
     flow["weak_flow_base_flag"] = (flow[["in_eur", "out_eur", "in_out_eur"]].isna().any(axis=1) | flow["weak_in_base_flag"].eq(1)).astype(int)
-    flow["flow_base_status"] = np.where(flow["weak_flow_base_flag"].eq(1), "warning", "pass")
+    flow["flow_base_status"] = np.select(
+        [flow["weak_flow_base_flag"].eq(1), flow["flow_uses_plan_fallback_flag"].eq(1)],
+        ["warning", "plan_fallback"],
+        default="pass",
+    )
     return flow[
         [
             "period_month",
@@ -468,6 +494,8 @@ def build_flow_base(stage: pd.DataFrame) -> pd.DataFrame:
             "out_to_in_pct",
             "in_out_margin_pct",
             "flow_base_status",
+            "flow_value_source",
+            "flow_uses_plan_fallback_flag",
             "weak_in_base_flag",
             "weak_flow_base_flag",
         ]
@@ -1759,6 +1787,34 @@ def validate_analysis_metric_enrichment(main_full: pd.DataFrame, slices: dict[st
     }
 
 
+def validate_period_cutoff(main_full: pd.DataFrame, flow: pd.DataFrame) -> dict[str, bool]:
+    cutoff = pd.Timestamp(f"{ACTUALS_CLOSED_THROUGH_MONTH}-01")
+    after_cutoff = main_full["month_dt"].gt(cutoff)
+    business_after_cutoff = after_cutoff & ~main_full["row_role"].eq("service_flow_row")
+    historical = main_full[main_full["period_type"].eq("historical")]
+    max_historical_month = historical["month_dt"].max() if not historical.empty else pd.NaT
+    return {
+        "period_cutoff_configured": ACTUALS_CLOSED_THROUGH_MONTH == "2026-04",
+        "max_historical_month_not_after_actuals_cutoff": bool(pd.isna(max_historical_month) or max_historical_month <= cutoff),
+        "planning_months_after_cutoff_not_historical": bool(not main_full.loc[after_cutoff, "period_type"].eq("historical").any()),
+        "no_fact_flag_after_actuals_cutoff_for_business_rows": bool(
+            main_full.loc[business_after_cutoff, "has_fact"].fillna(0).astype(int).eq(0).all()
+        ),
+        "service_rows_after_cutoff_not_marked_historical": bool(
+            not main_full.loc[after_cutoff & main_full["row_role"].eq("service_flow_row"), "period_type"].eq("historical").any()
+        ),
+        "flow_base_source_status_present": bool({"flow_value_source", "flow_uses_plan_fallback_flag"}.issubset(flow.columns)),
+        "flow_plan_fallback_explicitly_flagged": bool(
+            {"flow_value_source", "flow_uses_plan_fallback_flag"}.issubset(flow.columns)
+            and flow["flow_uses_plan_fallback_flag"].isin([0, 1]).all()
+            and flow.loc[flow["flow_value_source"].astype(str).str.contains("plan_fallback", regex=False), "flow_uses_plan_fallback_flag"].eq(1).all()
+        ),
+        "historical_base_excludes_months_after_cutoff": bool(
+            main_full.loc[main_full["period_type"].eq("historical"), "month_dt"].le(cutoff).all()
+        ),
+    }
+
+
 def write_configs() -> None:
     write_json(MARTS_DIR / "column_name_mapping_ru.json", COLUMN_NAME_MAPPING_RU)
     write_json(MARTS_DIR / "mart_threshold_config.json", THRESHOLDS)
@@ -1779,6 +1835,7 @@ def write_qa(
     legal_currency_excel_checks = validate_legal_currency_excel_sheets(MARTS_DIR / "mart_full_package.xlsx")
     general_excel_checks = validate_general_excel_qa(MARTS_DIR / "mart_full_package.xlsx")
     analysis_metric_checks = validate_analysis_metric_enrichment(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
+    period_cutoff_checks = validate_period_cutoff(main_full, flow)
     top_expense = slices["slice_plan_fact_article"].sort_values("abs_delta_eur", ascending=False).head(50)
     service_in_top = bool(top_expense["article"].isin(SERVICE_VALUES).any()) if "article" in top_expense else False
     compact_trace = bool(
@@ -1801,6 +1858,7 @@ def write_qa(
         **legal_currency_excel_checks,
         **general_excel_checks,
         **analysis_metric_checks,
+        **period_cutoff_checks,
         "service_rows_excluded_from_top_expense_deviations": not service_in_top,
         "in_used_as_denominator_for_proportionality_metrics": bool({"plan_to_in_pct", "fact_to_in_pct", "delta_to_in_pct", "abs_delta_to_in_pct"}.issubset(main_full.columns)),
         "in_out_not_summed_across_article_rows": bool(flow["in_out_eur"].notna().any() and "in_out_eur" not in slices["slice_plan_fact_article"].columns),
@@ -1827,6 +1885,8 @@ def write_qa(
         "legal_currency_excel_checks": legal_currency_excel_checks,
         "general_excel_checks": general_excel_checks,
         "analysis_metric_checks": analysis_metric_checks,
+        "period_cutoff_checks": period_cutoff_checks,
+        "actuals_closed_through_month": ACTUALS_CLOSED_THROUGH_MONTH,
         "row_counts": {
             "mart_main_full_budget": int(len(main_full)),
             "mart_flow_base_month": int(len(flow)),

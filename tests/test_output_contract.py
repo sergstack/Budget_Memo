@@ -8,12 +8,14 @@ from pathlib import Path
 import pandas as pd
 
 from src.main import (
+    ACTUALS_CLOSED_THROUGH_MONTH,
     AUDIT_DIR,
     DIAGNOSTIC_OUTPUTS,
     FULL_STAGE_OUTPUT,
     OLD_DIAGNOSTIC_OUTPUTS,
     OLD_USER_OUTPUTS,
     build_full_stage,
+    classify_period_month,
     load_cons_budget,
     run_pipeline,
 )
@@ -195,6 +197,22 @@ class FullStageContractTest(unittest.TestCase):
         self.assertFalse(non_cons["План, EUR"].isna().any())
         self.assertFalse(non_cons["Факт, EUR"].isna().any())
         self.assertLessEqual(self.stage.groupby("Месяц")["IN-OUT, EUR"].nunique(dropna=False).max(), 1)
+
+    def test_actuals_cutoff_period_classification(self) -> None:
+        self.assertEqual(ACTUALS_CLOSED_THROUGH_MONTH, "2026-04")
+        self.assertEqual(classify_period_month("2026-04"), "historical")
+        self.assertEqual(classify_period_month("2026-05"), "planning")
+
+    def test_stage_period_cutoff_rules(self) -> None:
+        month_dt = pd.to_datetime(self.stage["Месяц"].astype(str) + "-01", errors="raise")
+        after_cutoff = self.stage[month_dt.gt(pd.Timestamp(f"{ACTUALS_CLOSED_THROUGH_MONTH}-01"))]
+        self.assertFalse(after_cutoff["Тип периода"].eq("historical").any())
+        business_after = after_cutoff[~after_cutoff["Код статьи ДДС"].isin(["IN", "OUT", "IN-OUT"])]
+        self.assertTrue(business_after["has_fact"].fillna(0).astype(int).eq(0).all())
+        service_after = after_cutoff[after_cutoff["source_mix"].eq("cons_budget")]
+        self.assertFalse(service_after.empty)
+        self.assertTrue(service_after["Тип периода"].eq("planning").all())
+        self.assertTrue(service_after["has_fact"].fillna(0).astype(int).eq(0).all())
 
     def test_dates_are_populated_and_formatted(self) -> None:
         self.assertFalse(self.stage["Дата"].isna().any())
