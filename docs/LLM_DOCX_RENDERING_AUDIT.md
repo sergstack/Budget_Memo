@@ -56,4 +56,6 @@ MemoDisplayContract -> canonical renderer -> visual QA gate -> release manifest
 
 `scripts/run_synthetic_memo_release_pilot.py` now proves the synthetic-only MemoDisplayContract -> renderer -> visual QA -> release manifest chain. It is not wired into production generation yet.
 
+`scripts/run_monthly_plan_fact_standard_draft_release_pilot.py` now adapts the chain to memo02 standard in draft-only mode. It writes only under caller-provided output folders and is not wired into production generation.
+
 Do not combine renderer consolidation with formula, schema, output-contract, prompt, QA-gate, or business-logic changes.
