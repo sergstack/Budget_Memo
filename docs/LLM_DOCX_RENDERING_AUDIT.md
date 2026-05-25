@@ -46,4 +46,6 @@ Future renderer stabilization should be handled as separate reviewed tasks:
 MemoDisplayContract -> canonical renderer -> visual QA gate -> release manifest
 ```
 
+`src/memo_display_contract.py` now defines the standalone MemoDisplayContract v1 layer. It is not wired into DOCX rendering yet.
+
 Do not combine renderer consolidation with formula, schema, output-contract, prompt, QA-gate, or business-logic changes.
