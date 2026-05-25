@@ -5,9 +5,24 @@ import sys
 from pathlib import Path
 
 import pytest
+from docx import Document
 
 from scripts import run_synthetic_memo_release_pilot as pilot
 
+
+FORBIDDEN_VISIBLE_ENGLISH_PHRASES = [
+    "Draft Pilot Scope",
+    "Source Context Summary",
+    "Chart placeholder",
+    "Source files are read-only",
+    "No production DOCX generator is called",
+    "No raw, stage, mart, chart",
+    "Release Manifest",
+    "Synthetic data only",
+    "Status: draft",
+    "Period:",
+    "Audience:",
+]
 
 PRODUCTION_GENERATOR_MODULES = {
     "src.regenerate_clean_memo_narratives",
@@ -32,6 +47,15 @@ def test_release_manifest_references_generated_docx_and_visual_qa(tmp_path: Path
     assert manifest["artifact_paths"]["docx_path"] == result["docx_path"]
     assert manifest["artifact_paths"]["visual_qa_path"] == result["visual_qa_path"]
     assert manifest["artifact_paths"]["release_manifest_path"] == result["release_manifest_path"]
+
+
+def test_synthetic_pilot_docx_visible_body_has_no_forbidden_english_phrases(tmp_path: Path) -> None:
+    result = pilot.run_synthetic_memo_release_pilot(tmp_path)
+    text = docx_text(Path(result["docx_path"]))
+
+    assert "Синтетический пилот выпуска записки" in text
+    for phrase in FORBIDDEN_VISIBLE_ENGLISH_PHRASES:
+        assert phrase not in text
 
 
 def test_soffice_unavailable_blocks_release_manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -64,6 +88,13 @@ def test_production_generators_are_not_imported_or_called(tmp_path: Path) -> Non
 
     imported = set(sys.modules) - before
     assert PRODUCTION_GENERATOR_MODULES.isdisjoint(imported)
+
+
+def docx_text(path: Path) -> str:
+    document = Document(path)
+    paragraphs = [paragraph.text for paragraph in document.paragraphs]
+    table_cells = [cell.text for table in document.tables for row in table.rows for cell in row.cells]
+    return "\n".join(paragraphs + table_cells)
 
 
 def fake_blocked_visual_qa(docx_path: Path, out_dir: Path, soffice_bin: str | None = None) -> dict:

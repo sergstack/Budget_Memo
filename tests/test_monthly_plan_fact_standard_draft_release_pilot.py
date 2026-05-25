@@ -6,9 +6,24 @@ import sys
 from pathlib import Path
 
 import pytest
+from docx import Document
 
 from scripts import run_monthly_plan_fact_standard_draft_release_pilot as pilot
 
+
+FORBIDDEN_VISIBLE_ENGLISH_PHRASES = [
+    "Draft Pilot Scope",
+    "Source Context Summary",
+    "Chart placeholder",
+    "Source files are read-only",
+    "No production DOCX generator is called",
+    "No raw, stage, mart, chart",
+    "Release Manifest",
+    "Synthetic data only",
+    "Status: draft",
+    "Period:",
+    "Audience:",
+]
 
 PRODUCTION_GENERATOR_MODULES = {
     "src.regenerate_clean_memo_narratives",
@@ -49,6 +64,20 @@ def test_release_manifest_references_generated_docx_and_visual_qa(
     assert manifest["artifact_paths"]["docx_path"] == result["docx_path"]
     assert manifest["artifact_paths"]["visual_qa_path"] == result["visual_qa_path"]
     assert manifest["artifact_paths"]["release_manifest_path"] == result["release_manifest_path"]
+
+
+def test_memo02_draft_docx_visible_body_has_no_forbidden_english_phrases(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pilot, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_source_files(tmp_path / "sources")
+
+    result = pilot.run_monthly_plan_fact_standard_draft_release_pilot(tmp_path / "out", source_paths)
+    text = docx_text(Path(result["docx_path"]))
+
+    assert "Область чернового пилота" in text
+    assert "Сводка исходного контекста" in text
+    assert_no_forbidden_visible_english(text)
 
 
 def test_visual_qa_blocked_blocks_release_manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -132,6 +161,18 @@ def test_script_executes_by_file_path_with_fixture_sources(tmp_path: Path) -> No
     assert completed.returncode in {0, 2}
     assert "ModuleNotFoundError" not in completed.stderr
     assert (out_dir / pilot.PILOT_DIR_NAME / "release_manifest.json").exists()
+
+
+def docx_text(path: Path) -> str:
+    document = Document(path)
+    paragraphs = [paragraph.text for paragraph in document.paragraphs]
+    table_cells = [cell.text for table in document.tables for row in table.rows for cell in row.cells]
+    return "\n".join(paragraphs + table_cells)
+
+
+def assert_no_forbidden_visible_english(text: str) -> None:
+    for phrase in FORBIDDEN_VISIBLE_ENGLISH_PHRASES:
+        assert phrase not in text
 
 
 def write_source_files(root: Path) -> pilot.Memo02DraftSourcePaths:

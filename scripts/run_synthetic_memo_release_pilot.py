@@ -35,42 +35,42 @@ def build_synthetic_contract() -> MemoDisplayContract:
         memo_profile="synthetic_profile",
         depth_mode="standard",
         period="2026-04",
-        audience="Release QA",
-        title="Synthetic Memo Release Pilot",
-        subtitle="Synthetic data only",
-        status_line="Status: pilot fixture",
+        audience="Проверка выпуска",
+        title="Синтетический пилот выпуска записки",
+        subtitle="Только синтетические данные",
+        status_line="Статус: тестовый пилот",
         sections=[
             MemoSection(
                 section_id="summary",
-                title="Executive Summary",
+                title="Управленческое резюме",
                 blocks=[
-                    MemoBlock(block_type="paragraph", text="Synthetic paragraph for release chain validation."),
-                    MemoBlock(block_type="bullet_list", bullets=["Synthetic finding", "Synthetic risk"]),
+                    MemoBlock(block_type="paragraph", text="Синтетический абзац для проверки цепочки выпуска."),
+                    MemoBlock(block_type="bullet_list", bullets=["Синтетический вывод", "Синтетический риск"]),
                     MemoBlock(
                         block_type="kpi_cards",
-                        kpi_cards=[MemoKpiCard(label="Synthetic KPI", value="100", status="test")],
+                        kpi_cards=[MemoKpiCard(label="Синтетический показатель", value="100", status="тест")],
                     ),
                     MemoBlock(
                         block_type="table",
-                        table=MemoTable(headers=["Metric", "Value"], rows=[["Synthetic metric", "100"]]),
+                        table=MemoTable(headers=["Показатель", "Значение"], rows=[["Синтетический показатель", "100"]]),
                     ),
                     MemoBlock(
                         block_type="chart",
-                        chart=MemoChart(chart_id="synthetic_chart_01", title="Synthetic chart placeholder"),
+                        chart=MemoChart(chart_id="synthetic_chart_01", title="Синтетический график"),
                     ),
                     MemoBlock(
                         block_type="limitation_box",
-                        limitation=MemoLimitation(title="Limitations", text="Synthetic data only."),
+                        limitation=MemoLimitation(title="Ограничения", text="Используются только синтетические данные."),
                     ),
                     MemoBlock(
                         block_type="action_table",
                         action_items=[
                             MemoActionItem(
-                                action="Review pilot output",
-                                owner="QA",
-                                status="open",
+                                action="Проверить выход пилота",
+                                owner="Проверка качества",
+                                status="открыто",
                                 marker="candidate",
-                                evidence_ref="synthetic_evidence_01",
+                                evidence_ref="синтетическое подтверждение 01",
                             )
                         ],
                     ),
@@ -80,8 +80,8 @@ def build_synthetic_contract() -> MemoDisplayContract:
         appendix=[
             MemoBlock(
                 block_type="evidence_appendix",
-                text="Synthetic evidence appendix.",
-                evidence_refs=["synthetic_evidence_01"],
+                text="Синтетическое приложение с подтверждениями.",
+                evidence_refs=["синтетическое подтверждение 01"],
                 appendix_only=True,
             )
         ],
@@ -124,9 +124,9 @@ def run_synthetic_memo_release_pilot(out_dir: Path, soffice_bin: str | None = No
             release_status=release_status,
             release_blockers=release_blockers,
             accepted_by="synthetic-pilot" if release_status == "pass" else "",
-            rollback="Delete the synthetic pilot output directory.",
+            rollback="Удалить каталог синтетического пилота.",
         ),
-        notes="Synthetic memo release pilot; not production data.",
+        notes="Синтетический пилот выпуска записки; не производственные данные.",
     )
     write_release_manifest(manifest, manifest_path)
 

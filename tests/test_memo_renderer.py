@@ -122,14 +122,14 @@ def test_docx_contains_action_status_and_marker(tmp_path: Path) -> None:
     text = docx_text(output_path)
 
     assert "open" in text
-    assert "candidate" in text
+    assert "кандидат" in text
 
 
 def test_docx_contains_appendix_and_evidence_text(tmp_path: Path) -> None:
     output_path = render_memo_contract_to_docx(synthetic_contract(), tmp_path / "memo.docx")
     text = docx_text(output_path)
 
-    assert "Appendix / evidence" in text
+    assert "Приложение / подтверждения" in text
     assert "Synthetic evidence appendix text." in text
     assert "evidence-1" in text
 
