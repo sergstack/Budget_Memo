@@ -23,6 +23,10 @@ FORBIDDEN_VISIBLE_ENGLISH_PHRASES = [
     "Status: draft",
     "Period:",
     "Audience:",
+    "DOCX",
+    "Git",
+    "--out",
+    "memo02 standard",
 ]
 
 PRODUCTION_GENERATOR_MODULES = {
@@ -92,9 +96,36 @@ def test_memo02_draft_content_builder_includes_source_boundaries(
 
     assert "Как используется" in text
     assert "Что не делается" in text
-    assert "Не переносит доказательства в DOCX" in text
+    assert "Не переносит доказательства в файл Word" in text
     assert "Не копирует изображения и графические пакеты" in text
     assert "Финансовые показатели, формулы и управленческие выводы" in text
+
+
+def test_memo02_draft_action_block_is_readable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(pilot, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_source_files(tmp_path / "sources")
+
+    result = pilot.run_monthly_plan_fact_standard_draft_release_pilot(tmp_path / "out", source_paths)
+    text = docx_text(Path(result["docx_path"]))
+
+    assert "Действие" in text
+    assert "Владелец" in text
+    assert "Статус" in text
+    assert "Подтверждение" in text
+    assert "Проверить русскоязычный текст" in text
+
+
+def test_release_manifest_remains_pass_when_visual_qa_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pilot, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_source_files(tmp_path / "sources")
+
+    result = pilot.run_monthly_plan_fact_standard_draft_release_pilot(tmp_path / "out", source_paths)
+    manifest = json.loads(Path(result["release_manifest_path"]).read_text(encoding="utf-8"))
+
+    assert manifest["decision"]["release_status"] == "pass"
+    assert manifest["qa_status"]["visual_qa_status"] == "pass"
 
 
 def test_visual_qa_blocked_blocks_release_manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
