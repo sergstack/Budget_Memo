@@ -30,6 +30,28 @@ FORBIDDEN_OUTPUT_PARTS = {
     "final",
 }
 
+FORBIDDEN_VISIBLE_TECHNICAL_TERMS = [
+    "memo02",
+    "narrative",
+    "memo02_standard_final_text",
+    "standard_final_chart_metadata",
+    "evidence_map",
+    "package_qa",
+    "chart_id",
+    "planning_quality_frequency_impact",
+    "Git",
+    "--out",
+    "memo02 standard",
+]
+
+ALLOWED_SOURCE_BUSINESS_TERMS = [
+    "ДР offline marketing",
+    "Delta EUR",
+    "p-fact",
+    "refunds",
+    "IN/OUT",
+]
+
 
 def test_analytical_flow_creates_expected_outputs_under_out_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -101,23 +123,7 @@ def test_analytical_docx_visible_body_is_russian_without_forbidden_terms(
     ]:
         assert heading in text
     assert_no_forbidden_visible_english(text)
-    for term in [
-        "memo02",
-        "Delta",
-        "ABS",
-        "Word",
-        "narrative",
-        "memo02_standard_final_text",
-        "standard_final_chart_metadata",
-        "evidence_map",
-        "package_qa",
-        "chart_id",
-        "planning_quality_frequency_impact",
-        "DOCX",
-        "Git",
-        "--out",
-        "memo02 standard",
-    ]:
+    for term in FORBIDDEN_VISIBLE_TECHNICAL_TERMS:
         assert term not in text
     for term in [
         "управленческий текст",
@@ -127,6 +133,36 @@ def test_analytical_docx_visible_body_is_russian_without_forbidden_terms(
         "проверка пакета",
     ]:
         assert term in text
+
+
+def test_source_business_labels_are_preserved_and_do_not_fail_language_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(flow, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_analytical_sources(tmp_path / "sources")
+
+    result = flow.run_memo02_standard_analytical_draft_release_flow(tmp_path / "draft_out", source_paths)
+    text = docx_text(Path(result["docx_path"]))
+
+    for term in ALLOWED_SOURCE_BUSINESS_TERMS:
+        assert term in text
+    for term in FORBIDDEN_VISIBLE_TECHNICAL_TERMS:
+        assert term not in text
+
+
+def test_grammar_blockers_are_absent_from_visible_body(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(flow, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_analytical_sources(tmp_path / "sources")
+
+    result = flow.run_memo02_standard_analytical_draft_release_flow(tmp_path / "draft_out", source_paths)
+    text = docx_text(Path(result["docx_path"]))
+
+    assert "отрицательную отклонение" not in text
+    assert "направление отклонение" not in text
+    assert "отрицательное отклонение" in text
+    assert "направление отклонения" in text
 
 
 def test_chart_interpretations_and_metadata_are_reflected_in_contract(
@@ -142,6 +178,8 @@ def test_chart_interpretations_and_metadata_are_reflected_in_contract(
     assert interpretations[0]["chart_id"] == "planning_quality_frequency_impact"
     for key in ["what_shows", "management_meaning", "what_to_check", "limitation"]:
         assert interpretations[0][key]
+    assert "частоту сигналов качества планирования" in interpretations[0]["what_shows"]
+    assert "массовые плановые расхождения" in interpretations[0]["management_meaning"]
     chart_blocks = [
         block
         for section in contract["sections"]
@@ -266,6 +304,7 @@ def write_analytical_sources(root: Path) -> flow.Memo02AnalyticalSourcePaths:
         "Период близок к плану на уровне общего итога, но структура отклонений требует управленческого просмотра.\n\n"
         "## Ключевые показатели\n\n"
         "- План и факт сопоставляются за апрель 2026.\n"
+        "- По статье ДР offline marketing виден сигнал Delta EUR; p-fact, refunds и IN/OUT остаются исходными бизнес-метками, а отрицательную отклонение и направление отклонение требуют проверки без вывода о причине.\n"
         "- Основной маршрут проверки проходит через статьи, ЦФО, факт без плана и план без факта.\n"
         "- Причины отклонений не подтверждаются без комментариев владельцев бюджета.\n",
         encoding="utf-8",
