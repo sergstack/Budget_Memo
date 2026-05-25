@@ -58,4 +58,6 @@ MemoDisplayContract -> canonical renderer -> visual QA gate -> release manifest
 
 `scripts/run_monthly_plan_fact_standard_draft_release_pilot.py` now adapts the chain to memo02 standard in draft-only mode. It writes only under caller-provided output folders and is not wired into production generation.
 
+Visible memo body text in pilot-generated DOCX outputs is required to use Russian wording. English service labels may remain in JSON keys, file names, paths, and internal identifiers, but not in business memo body text.
+
 Do not combine renderer consolidation with formula, schema, output-contract, prompt, QA-gate, or business-logic changes.

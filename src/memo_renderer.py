@@ -27,14 +27,14 @@ def render_memo_contract_to_docx(contract: MemoDisplayContract, output_path: Pat
         doc.add_paragraph(contract.subtitle)
     if contract.status_line:
         doc.add_paragraph(contract.status_line)
-    doc.add_paragraph(f"Period: {contract.period}")
-    doc.add_paragraph(f"Audience: {contract.audience}")
+    doc.add_paragraph(f"Период: {contract.period}")
+    doc.add_paragraph(f"Аудитория: {contract.audience}")
 
     for section in contract.sections:
         _render_section(doc, section)
 
     if contract.appendix:
-        doc.add_heading("Appendix / evidence", level=1)
+        doc.add_heading("Приложение / подтверждения", level=1)
         for block in contract.appendix:
             _render_block(doc, block)
 
@@ -60,26 +60,26 @@ def _render_block(doc: Document, block: MemoBlock) -> None:
             if card.status:
                 parts.append(card.status)
             if card.source_ref:
-                parts.append(f"source: {card.source_ref}")
+                parts.append(f"источник: {card.source_ref}")
             doc.add_paragraph(" | ".join(parts))
     elif block.block_type == "table":
         _render_table(doc, block.table)
     elif block.block_type == "chart" and block.chart is not None:
-        doc.add_paragraph(f"Chart placeholder: {block.chart.chart_id} - {block.chart.title}")
+        doc.add_paragraph(f"График: {block.chart.title}")
         if block.chart.caption:
             doc.add_paragraph(block.chart.caption)
     elif block.block_type == "limitation_box" and block.limitation is not None:
         doc.add_heading(block.limitation.title, level=2)
         text = block.limitation.text
         if block.limitation.severity:
-            text = f"{text} Severity: {block.limitation.severity}"
+            text = f"{text} Уровень: {block.limitation.severity}"
         doc.add_paragraph(text)
     elif block.block_type == "action_table":
         rows = [
-            [item.action, item.owner, item.status, item.marker, item.due_date, item.evidence_ref]
+            [item.action, item.owner, item.status, _render_marker(item.marker), item.due_date, item.evidence_ref]
             for item in block.action_items
         ]
-        _render_table(doc, MemoTable(headers=["Action", "Owner", "Status", "Marker", "Due date", "Evidence"], rows=rows))
+        _render_table(doc, MemoTable(headers=["Действие", "Владелец", "Статус", "Маркер", "Срок", "Подтверждение"], rows=rows))
     elif block.block_type == "evidence_appendix":
         if block.text:
             doc.add_paragraph(block.text)
@@ -100,3 +100,7 @@ def _render_table(doc: Document, memo_table: MemoTable | None) -> None:
             cells[index].text = value
     if memo_table.caption:
         doc.add_paragraph(memo_table.caption)
+
+
+def _render_marker(marker: str) -> str:
+    return {"candidate": "кандидат", "final": "финал"}.get(marker, marker)

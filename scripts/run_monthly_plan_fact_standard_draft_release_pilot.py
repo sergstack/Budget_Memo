@@ -82,7 +82,7 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
             visual_qa_path=visual_qa_dir / "defects.json",
             manifest_path=manifest_path,
             blockers=[f"missing_source:{name}" for name in missing_sources],
-            notes="Required memo02 standard read-only source files are missing; no draft DOCX was generated.",
+            notes="Не найдены обязательные исходные файлы memo02 standard; черновой DOCX не создан.",
         )
         write_release_manifest(manifest, manifest_path)
         return {
@@ -104,7 +104,7 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
             visual_qa_path=visual_qa_dir / "defects.json",
             manifest_path=manifest_path,
             blockers=[f"contract_validation:{error}" for error in contract_errors],
-            notes="MemoDisplayContract validation failed; no draft DOCX was generated.",
+            notes="Проверка MemoDisplayContract завершилась ошибкой; черновой DOCX не создан.",
         )
         write_release_manifest(manifest, manifest_path)
         return {
@@ -145,9 +145,9 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
             release_status=release_status,
             release_blockers=release_blockers,
             accepted_by="memo02-standard-draft-pilot" if release_status == "pass" else "",
-            rollback="Delete the caller-provided draft pilot output directory.",
+            rollback="Удалить каталог чернового пилота, переданный через --out.",
         ),
-        notes="Draft-only memo02 standard release pilot; not production wiring.",
+        notes="Черновой пилот memo02 standard; не подключен к промышленной генерации.",
     )
     write_release_manifest(manifest, manifest_path)
 
@@ -164,84 +164,85 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
 
 def build_memo02_standard_draft_contract(source_text: dict[str, str], period: str) -> MemoDisplayContract:
     source_rows = [
-        ["README", "available"],
-        ["package QA", "available"],
-        ["evidence map", "available"],
-        ["chart metadata", "available"],
+        ["Описание пакета", "файл найден"],
+        ["Проверка пакета", "файл найден"],
+        ["Карта подтверждений", "файл найден"],
+        ["Каталог графиков", "файл найден"],
     ]
     return MemoDisplayContract(
         memo_id=MEMO_ID,
         memo_profile=MEMO_PROFILE,
         depth_mode=DEPTH_MODE,
         period=period,
-        audience="CFO / COO / management reviewers",
-        title="Monthly Plan-Fact Memo — Standard Draft Pilot",
-        subtitle="Draft-only release-chain pilot",
-        status_line="Status: draft pilot generated outside production report folders.",
+        audience="Финансовый директор / операционный директор / управленческие рецензенты",
+        title="Ежемесячная записка План-Факт — стандартный черновой пилот",
+        subtitle="Черновая проверка цепочки выпуска",
+        status_line="Статус: черновой пилот создан вне промышленных папок отчётов.",
         sections=[
             MemoSection(
                 section_id="scope",
-                title="Draft Pilot Scope",
+                title="Область чернового пилота",
                 blocks=[
                     MemoBlock(
                         block_type="paragraph",
                         text=(
-                            "This draft validates the MemoDisplayContract to DOCX to Visual QA to Release Manifest chain "
-                            "for the monthly plan-fact memo standard profile without modifying accepted artifacts."
+                            "Этот черновик проверяет цепочку от контракта отображения записки до DOCX, визуальной проверки "
+                            "и манифеста выпуска для стандартного профиля ежемесячной записки План-Факт без изменения "
+                            "принятых артефактов."
                         ),
                     ),
                     MemoBlock(
                         block_type="bullet_list",
                         bullets=[
-                            "Source files are read-only.",
-                            "No production DOCX generator is called.",
-                            "No raw, stage, mart, chart, report, or QA layer is regenerated.",
+                            "Исходные файлы используются только для чтения.",
+                            "Промышленный генератор DOCX не вызывается.",
+                            "Слои исходных данных, подготовки, витрин, графиков, отчётов и проверок не пересобираются.",
                         ],
                     ),
                     MemoBlock(
                         block_type="table",
                         table=MemoTable(
-                            headers=["Source", "Pilot read status"],
+                            headers=["Источник", "Статус чтения пилотом"],
                             rows=source_rows,
-                            caption="Presence-only source check; no financial recalculation is performed.",
+                            caption="Проверяется только наличие источников; финансовые показатели не пересчитываются.",
                         ),
                     ),
                 ],
             ),
             MemoSection(
                 section_id="source_summary",
-                title="Source Context Summary",
+                title="Сводка исходного контекста",
                 blocks=[
-                    MemoBlock(block_type="paragraph", text=_safe_excerpt(source_text["readme"])),
-                    MemoBlock(block_type="paragraph", text=_safe_excerpt(source_text["package_qa"])),
+                    MemoBlock(block_type="paragraph", text=_source_presence_note(source_text["readme"], "описание пакета")),
+                    MemoBlock(block_type="paragraph", text=_source_presence_note(source_text["package_qa"], "проверка пакета")),
                     MemoBlock(
                         block_type="chart",
                         chart=MemoChart(
                             chart_id="memo02_standard_chart_catalog",
-                            title="Chart catalog placeholder",
-                            caption="Chart metadata was read as a catalog reference only; chart images are not embedded.",
+                            title="Каталог графиков",
+                            caption="Метаданные графиков прочитаны только как справочный каталог; изображения не встраиваются.",
                         ),
                     ),
                     MemoBlock(
                         block_type="limitation_box",
                         limitation=MemoLimitation(
-                            title="Draft limitations",
+                            title="Ограничения черновика",
                             text=(
-                                "This pilot proves release-chain mechanics only. It does not recalculate Plan-Fact metrics, "
-                                "reinterpret business logic, or replace the accepted memo artifact."
+                                "Этот пилот проверяет только механику цепочки выпуска. Он не пересчитывает показатели План-Факт, "
+                                "не переинтерпретирует бизнес-логику и не заменяет принятый артефакт записки."
                             ),
-                            severity="release-chain-only",
+                            severity="только цепочка выпуска",
                         ),
                     ),
                     MemoBlock(
                         block_type="action_table",
                         action_items=[
                             MemoActionItem(
-                                action="Review draft pilot outputs before any production wiring task.",
-                                owner="Repository maintainer",
-                                status="open",
+                                action="Проверить выходы чернового пилота до любой задачи промышленного подключения.",
+                                owner="Сопровождающий репозитория",
+                                status="открыто",
                                 marker="candidate",
-                                evidence_ref="memo02_standard_draft_pilot_sources",
+                                evidence_ref="источники чернового пилота memo02 standard",
                             )
                         ],
                     ),
@@ -252,8 +253,8 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
         appendix=[
             MemoBlock(
                 block_type="evidence_appendix",
-                text="Read-only source categories used by the draft pilot.",
-                evidence_refs=["README", "package QA", "evidence map", "chart metadata"],
+                text="Категории источников, использованные черновым пилотом только для чтения.",
+                evidence_refs=["описание пакета", "проверка пакета", "карта подтверждений", "каталог графиков"],
                 appendix_only=True,
             )
         ],
@@ -291,12 +292,11 @@ def _detect_period(readme_text: str) -> str:
     return DEFAULT_PERIOD
 
 
-def _safe_excerpt(text: str, max_chars: int = 420) -> str:
+def _source_presence_note(text: str, source_label: str) -> str:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
-    sanitized = " ".join(lines)
-    if not sanitized:
-        return "Source file is present but contains no readable text."
-    return sanitized[:max_chars].rstrip() + ("..." if len(sanitized) > max_chars else "")
+    if not lines:
+        return f"Файл «{source_label}» найден, но не содержит читаемого текста."
+    return f"Файл «{source_label}» найден и прочитан в режиме только для чтения."
 
 
 def _blocked_manifest(
@@ -325,7 +325,7 @@ def _blocked_manifest(
         decision=ReleaseDecision(
             release_status="blocked",
             release_blockers=blockers,
-            rollback="Delete the caller-provided draft pilot output directory.",
+            rollback="Удалить каталог чернового пилота, переданный через --out.",
         ),
         notes=notes,
     )
