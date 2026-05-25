@@ -1,0 +1,48 @@
+name: Documentation task
+description: Request a bounded documentation-only change.
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Documentation tasks must not silently change business logic, formulas, schemas, contracts, prompts, tests, or generated artifacts.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What should the documentation clarify or add?
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files allowed to modify
+      description: List exact files or folders. Avoid broad cleanup scopes.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden actions
+      description: List files, folders, commands, or content that must not change.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks to run
+      description: Include safe data-free checks unless the task explicitly requires more.
+      value: |
+        python3 scripts/check_repo_public_safety.py
+        python3 -m unittest tests.test_repo_public_safety -q
+        python3 scripts/verify_memo_factory_quality_gates.py --config config/memo_factory_quality_gates.yml
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How should reviewers verify the docs-only change?
+    validations:
+      required: true

@@ -12,6 +12,11 @@ python scripts/verify_memo_factory_quality_gates.py --config config/memo_factory
 
 GitHub Actions must stay limited to this data-free class of checks.
 
+For public review and contribution workflow context, see:
+
+- [Reviewer quickstart](docs/reviewer_quickstart.md)
+- [Developer workflow](docs/developer_workflow.md)
+
 ## Run All Unit Tests
 
 ```bash

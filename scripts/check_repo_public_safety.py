@@ -60,7 +60,24 @@ REQUIRED_TOP_LEVEL = {
     "README.md",
     "AGENTS.md",
     "TESTING.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
     "requirements.txt",
+}
+
+REQUIRED_GOVERNANCE_FILES = {
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/docs_task.yml",
+    ".github/ISSUE_TEMPLATE/repo_hygiene_task.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    "docs/developer_workflow.md",
+    "docs/release_checklist.md",
+    "docs/repo_governance.md",
+    "docs/reviewer_quickstart.md",
+    "docs/documentation_map.md",
+    "docs/documentation_consolidation_plan.md",
 }
 
 REQUIRED_GITIGNORE_PATTERNS = {
@@ -113,7 +130,8 @@ def is_forbidden_tracked_file(path: str) -> bool:
 
 
 def check_required_files() -> list[str]:
-    return sorted(path for path in REQUIRED_TOP_LEVEL if not (ROOT / path).exists())
+    required = REQUIRED_TOP_LEVEL | REQUIRED_GOVERNANCE_FILES
+    return sorted(path for path in required if not (ROOT / path).exists())
 
 
 def check_gitignore_patterns() -> list[str]:

@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a specific reproducible problem.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for a bounded issue. Avoid broad requests such as "improve everything".
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective / observed problem
+      description: What failed, and what should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which files, commands, or flows are involved?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include only safe commands. Do not include secrets or corporate data values.
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden actions
+      description: List files, layers, commands, or behavior that must not be changed.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks / acceptance criteria
+      description: Which data-free or local checks should prove completion?
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk
+      description: Note business logic, data, security, or output-contract risk.
+    validations:
+      required: true

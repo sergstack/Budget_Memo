@@ -34,13 +34,20 @@ Keep as current entrypoints:
 
 - `README.md`
 - `TESTING.md`
+- `CONTRIBUTING.md`
+- `CHANGELOG.md`
+- `SECURITY.md`
 - `AGENTS.md`
 - `SPEC.md`
 - `PROJECT_STATUS.md`
 - `PROJECT_ARCHITECTURE_SUMMARY.md`
 - `PROJECT_ARTIFACT_INVENTORY.md`
+- `docs/developer_workflow.md`
+- `docs/reviewer_quickstart.md`
+- `docs/release_checklist.md`
 - `docs/public_clone_smoke_check.md`
 - `docs/repo_cleanup_policy.md`
+- `docs/repo_governance.md`
 - `docs/repo_hardening_audit.md`
 
 ### Active Planning Docs
@@ -115,6 +122,12 @@ Decide the canonical owner for each duplicate group:
 - project status/handoff owner.
 
 Output should be a reviewed decision note before any deletion or move.
+
+### Stage 3 Governance / Developer Experience Docs
+
+Status: added as current navigation and review aids.
+
+Stage 3 adds contributor-facing governance and workflow documents plus GitHub PR/issue templates. These files clarify review expectations and safe public checks, but they do not complete documentation consolidation, delete duplicates, or replace business doctrine.
 
 ### Step 3: Add Cross-Links
 

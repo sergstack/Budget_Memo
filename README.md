@@ -16,6 +16,14 @@ python scripts/verify_memo_factory_quality_gates.py --config config/memo_factory
 
 Full pipeline execution and full regression tests require local ignored corporate data and generated artifacts. Do not run the full pipeline, report generation, or Ollama/live LLM generation from a public clone.
 
+## For Reviewers / Contributors
+
+- [Reviewer quickstart](docs/reviewer_quickstart.md)
+- [Contributing guide](CONTRIBUTING.md)
+- [Testing guide](TESTING.md)
+- [Repository governance](docs/repo_governance.md)
+- [Documentation map](docs/documentation_map.md)
+
 ## Current Project State
 
 First analytical memo pilot is completed and frozen for handoff:

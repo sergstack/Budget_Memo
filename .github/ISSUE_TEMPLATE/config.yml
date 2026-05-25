@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Public clone smoke checks
+    url: https://github.com/sergstack/Budget_Memo/blob/main/docs/public_clone_smoke_check.md
+    about: Start here for safe commands that do not require corporate data.
+  - name: Documentation map
+    url: https://github.com/sergstack/Budget_Memo/blob/main/docs/documentation_map.md
+    about: Use this to find the current documentation owner before opening cleanup tasks.

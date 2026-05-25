@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from scripts.check_repo_public_safety import (
+    REQUIRED_GOVERNANCE_FILES,
     check_gitignore_patterns,
     check_required_files,
     is_forbidden_tracked_file,
@@ -18,6 +19,12 @@ class RepoPublicSafetyTest(unittest.TestCase):
 
     def test_required_public_repo_files_exist(self) -> None:
         self.assertEqual(check_required_files(), [])
+
+    def test_required_governance_files_exist(self) -> None:
+        missing = set(check_required_files())
+        self.assertTrue(REQUIRED_GOVERNANCE_FILES)
+        for path in REQUIRED_GOVERNANCE_FILES:
+            self.assertNotIn(path, missing)
 
     def test_required_gitignore_safety_patterns_exist(self) -> None:
         self.assertEqual(check_gitignore_patterns(), [])
