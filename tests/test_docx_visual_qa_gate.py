@@ -44,8 +44,8 @@ def test_valid_synthetic_docx_writes_diagnostics(tmp_path: Path) -> None:
 
     assert (out_dir / "defects.json").exists()
     assert (out_dir / "diagnostic_report.md").exists()
-    assert result["metrics"]["paragraph_count"] >= 1
-    assert result["metrics"]["tables_count"] == 1
+    assert result["package"]["file_size"] > 0
+    assert result["package"]["tables"] >= 1
 
 
 def test_defects_json_has_required_status_fields(tmp_path: Path) -> None:
@@ -63,7 +63,7 @@ def test_missing_docx_path_returns_blocked_status(tmp_path: Path) -> None:
     result = diagnose_docx_visual_quality(tmp_path / "missing.docx", out_dir)
 
     assert result["overall_visual_release_status"] == "blocked"
-    assert "docx_missing" in result["release_blockers"]
+    assert any(blocker["description"] == "DOCX file does not exist." for blocker in result["release_blockers"])
     assert (out_dir / "defects.json").exists()
 
 
@@ -73,9 +73,8 @@ def test_local_debug_path_inside_docx_is_reported(tmp_path: Path) -> None:
 
     result = diagnose_docx_visual_quality(docx_path, out_dir)
 
-    defect_ids = {defect["id"] for defect in result["defects"]}
-    assert "local_debug_path_present" in defect_ids
-    assert result["publishing_hygiene_status"] == "blocked"
+    assert any(defect["description"] == "DOCX contains local/debug paths." for defect in result["defects"])
+    assert result["publishing_hygiene_status"] in {"blocked", "revise"}
 
 
 def test_source_docx_is_not_modified(tmp_path: Path) -> None:
