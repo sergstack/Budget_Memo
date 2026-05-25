@@ -1,12 +1,24 @@
 # Testing
 
+## Public Data-Free Checks
+
+These checks are safe for a public clone and do not require corporate workbooks, generated marts, report artifacts, Ollama, or LibreOffice:
+
+```bash
+python scripts/check_repo_public_safety.py
+python -m unittest tests.test_repo_public_safety -q
+python scripts/verify_memo_factory_quality_gates.py --config config/memo_factory_quality_gates.yml
+```
+
+GitHub Actions must stay limited to this data-free class of checks.
+
 ## Run All Unit Tests
 
 ```bash
 python3 -m unittest discover -s tests -q
 ```
 
-This is the default non-Ollama unit test command.
+This is the local full unit test command. Some tests may require ignored local data, generated artifacts, or local QA fixtures and are not suitable for public GitHub CI unless explicitly classified as data-free.
 
 ## Run Selected Tests
 
@@ -29,6 +41,23 @@ Tests that exercise `src.run_ollama_memo_pipeline` or live memo generation may r
 Skipped Ollama tests mean the local model service was unavailable; they are not evidence that generation passed.
 
 Do not run memo generation tests or live report pipelines unless the task explicitly asks for regeneration.
+
+## Local Data-Dependent Checks
+
+These checks require ignored local layers such as `01_raw/`, `02_stage/`, `03_marts/`, `04_charts/`, `05_evidence/`, `06_reports/`, or `07_qa/`:
+
+```bash
+python3 src/main.py
+python3 src/build_marts.py
+python3 -m unittest tests.test_output_contract -q
+python3 -m unittest tests.test_mart_outputs -q
+```
+
+Do not run these checks in public CI.
+
+## Report-Generation Checks
+
+Report, DOCX, Excel, render, and accepted-package checks may require local generated artifacts, LibreOffice, chart images, and memo package folders. Run them only when the task explicitly authorizes report validation or regeneration.
 
 ## Accepted-Package Smoke Check
 

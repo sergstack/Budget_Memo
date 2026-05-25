@@ -2,6 +2,20 @@
 
 Clean ETL project for final user-facing budget exports.
 
+## Public Repository Scope
+
+This public repository intentionally excludes corporate source data and generated artifacts. Local data and outputs remain ignored under folders such as `01_raw/`, `02_stage/`, `03_marts/`, `04_charts/`, `04_signals/`, `05_evidence/`, `05_llm_package/`, `06_reports/`, `07_qa/`, `99_archive/`, and `artifacts/`.
+
+Public clones can run only data-free smoke checks:
+
+```bash
+python scripts/check_repo_public_safety.py
+python -m unittest tests.test_repo_public_safety -q
+python scripts/verify_memo_factory_quality_gates.py --config config/memo_factory_quality_gates.yml
+```
+
+Full pipeline execution and full regression tests require local ignored corporate data and generated artifacts. Do not run the full pipeline, report generation, or Ollama/live LLM generation from a public clone.
+
 ## Current Project State
 
 First analytical memo pilot is completed and frozen for handoff:
