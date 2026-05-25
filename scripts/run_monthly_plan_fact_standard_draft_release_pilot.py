@@ -16,7 +16,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from scripts.diagnose_docx_visual_quality import diagnose_docx_visual_quality
 from src.memo_display_contract import (
-    MemoActionItem,
     MemoBlock,
     MemoChart,
     MemoDisplayContract,
@@ -84,7 +83,7 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
             visual_qa_path=visual_qa_dir / "defects.json",
             manifest_path=manifest_path,
             blockers=[f"missing_source:{name}" for name in missing_sources],
-            notes="Не найдены обязательные исходные файлы memo02 standard; черновой DOCX не создан.",
+            notes="Не найдены обязательные исходные файлы стандартной записки План-Факт; черновой файл Word не создан.",
         )
         write_release_manifest(manifest, manifest_path)
         return {
@@ -106,7 +105,7 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
             visual_qa_path=visual_qa_dir / "defects.json",
             manifest_path=manifest_path,
             blockers=[f"contract_validation:{error}" for error in contract_errors],
-            notes="Проверка MemoDisplayContract завершилась ошибкой; черновой DOCX не создан.",
+            notes="Проверка контракта отображения завершилась ошибкой; черновой файл Word не создан.",
         )
         write_release_manifest(manifest, manifest_path)
         return {
@@ -147,9 +146,9 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
             release_status=release_status,
             release_blockers=release_blockers,
             accepted_by="memo02-standard-draft-pilot" if release_status == "pass" else "",
-            rollback="Удалить каталог чернового пилота, переданный через --out.",
+            rollback="Удалить выходной каталог чернового пилота.",
         ),
-        notes="Черновой пилот memo02 standard; не подключен к промышленной генерации.",
+        notes="Черновой пилот стандартной записки План-Факт; не подключен к промышленной генерации.",
     )
     write_release_manifest(manifest, manifest_path)
 
@@ -186,7 +185,7 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                         block_type="paragraph",
                         text=(
                             "Этот черновик показывает, как стандартная ежемесячная записка План-Факт может проходить "
-                            "новую цепочку выпуска: контракт отображения, сборка DOCX, визуальная проверка и манифест. "
+                            "новую цепочку выпуска: контракт отображения, сборка файла Word, визуальная проверка и манифест. "
                             "Пилот не является принятой бизнес-версией записки и не заменяет финальные материалы."
                         ),
                     ),
@@ -194,7 +193,7 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                         block_type="bullet_list",
                         bullets=[
                             "Исходные файлы используются только для чтения.",
-                            "Промышленный генератор DOCX не вызывается.",
+                            "Промышленный генератор файлов Word не вызывается.",
                             "Слои исходных данных, подготовки, витрин, графиков, отчётов и проверок не пересобираются.",
                             "Финансовые показатели, формулы и управленческие выводы в этом пилоте не пересчитываются.",
                         ],
@@ -264,19 +263,20 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                         ),
                     ),
                     MemoBlock(
-                        block_type="action_table",
-                        action_items=[
-                            MemoActionItem(
-                                action=(
-                                    "Проверить русскоязычный текст, визуальную диагностику и манифест перед отдельной задачей "
-                                    "промышленного подключения."
-                                ),
-                                owner="Сопровождающий репозитория",
-                                status="открыто",
-                                marker="candidate",
-                                evidence_ref="источники чернового пилота memo02 standard",
-                            )
-                        ],
+                        block_type="table",
+                        table=MemoTable(
+                            headers=["Поле", "Значение"],
+                            rows=[
+                                [
+                                    "Действие",
+                                    "Проверить русскоязычный текст, визуальную диагностику и манифест перед отдельной задачей промышленного подключения.",
+                                ],
+                                ["Владелец", "Сопровождающий репозитория"],
+                                ["Статус", "открыто"],
+                                ["Подтверждение", "источники чернового пилота стандартной записки План-Факт"],
+                            ],
+                            caption="Компактный блок следующего действия для ручной проверки черновика.",
+                        ),
                     ),
                 ],
             ),
@@ -287,14 +287,14 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                 block_type="evidence_appendix",
                 text=(
                     "Приложение перечисляет категории источников, прочитанные пилотом. Содержимое исходных файлов "
-                    "не переносится в финальные папки и не добавляется в Git."
+                    "не переносится в финальные папки и не добавляется в репозиторий."
                 ),
                 evidence_refs=[
                     "описание пакета",
                     "проверка пакета",
                     "карта подтверждений",
                     "каталог графиков",
-                    "выходной каталог, переданный через параметр --out",
+                    "выходной каталог, переданный при запуске",
                 ],
                 appendix_only=True,
             )
@@ -344,7 +344,7 @@ def _source_usage_rows(source_text: dict[str, str]) -> list[list[str]]:
     return [
         ["Описание пакета", _source_use_status(source_text["readme"]), "Не переписывает статус финальных артефактов"],
         ["Проверка пакета", _source_use_status(source_text["package_qa"]), "Не заменяет действующие проверки качества"],
-        ["Карта подтверждений", _source_use_status(source_text["evidence_map"]), "Не переносит доказательства в DOCX"],
+        ["Карта подтверждений", _source_use_status(source_text["evidence_map"]), "Не переносит доказательства в файл Word"],
         ["Каталог графиков", _source_use_status(source_text["chart_metadata"]), "Не копирует изображения и графические пакеты"],
     ]
 
@@ -394,7 +394,7 @@ def _blocked_manifest(
         decision=ReleaseDecision(
             release_status="blocked",
             release_blockers=blockers,
-            rollback="Удалить каталог чернового пилота, переданный через --out.",
+            rollback="Удалить выходной каталог чернового пилота.",
         ),
         notes=notes,
     )
