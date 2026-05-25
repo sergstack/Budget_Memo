@@ -29,6 +29,15 @@ Describe the objective and the smallest useful change made.
 
 ## Tests / Checks Run
 
+Test profile used:
+
+- [ ] `public_data_free`
+- [ ] `local_data_dependent`
+- [ ] `report_generation`
+- [ ] `ollama_live_llm`
+- [ ] `contract_regression`
+- [ ] `not applicable / explain`
+
 ```bash
 python3 scripts/check_repo_public_safety.py
 python3 -m unittest tests.test_repo_public_safety -q

@@ -20,6 +20,8 @@ python3 scripts/verify_memo_factory_quality_gates.py --config config/memo_factor
 
 Full local pipeline checks require ignored corporate data and generated layers. Run them only when the task explicitly authorizes data-dependent validation.
 
+Use the test profiles in `docs/test_strategy_matrix.md` and the CI policy in `docs/ci_matrix.md` when deciding which checks belong in a PR.
+
 ## Branch And PR Workflow
 
 - Create a topic branch from `main`.

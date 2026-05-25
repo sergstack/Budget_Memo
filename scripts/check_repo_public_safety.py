@@ -76,8 +76,12 @@ REQUIRED_GOVERNANCE_FILES = {
     "docs/release_checklist.md",
     "docs/repo_governance.md",
     "docs/reviewer_quickstart.md",
+    "docs/test_strategy_matrix.md",
+    "docs/ci_matrix.md",
     "docs/documentation_map.md",
     "docs/documentation_consolidation_plan.md",
+    "scripts/check_test_strategy.py",
+    "tests/test_test_strategy.py",
 }
 
 REQUIRED_GITIGNORE_PATTERNS = {

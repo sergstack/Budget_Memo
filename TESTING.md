@@ -12,6 +12,11 @@ python scripts/verify_memo_factory_quality_gates.py --config config/memo_factory
 
 GitHub Actions must stay limited to this data-free class of checks.
 
+For the full test-profile policy and CI lane policy, see:
+
+- [Test strategy matrix](docs/test_strategy_matrix.md)
+- [CI matrix](docs/ci_matrix.md)
+
 For public review and contribution workflow context, see:
 
 - [Reviewer quickstart](docs/reviewer_quickstart.md)
@@ -24,6 +29,7 @@ python3 -m unittest discover -s tests -q
 ```
 
 This is the local full unit test command. Some tests may require ignored local data, generated artifacts, or local QA fixtures and are not suitable for public GitHub CI unless explicitly classified as data-free.
+It is local validation and not the default public CI command.
 
 ## Run Selected Tests
 

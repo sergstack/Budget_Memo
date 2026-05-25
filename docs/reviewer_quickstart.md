@@ -39,11 +39,15 @@ python3 scripts/verify_memo_factory_quality_gates.py --config config/memo_factor
 
 `Repo Smoke` validates repository safety and data-free configuration readiness. It does not prove the full local financial pipeline, report generation, DOCX/PDF rendering, or Ollama synthesis.
 
+See `docs/test_strategy_matrix.md` and `docs/ci_matrix.md` for the test profile and CI lane definitions.
+
 ## Where To Start
 
 - `README.md`: project overview and public scope.
 - `TESTING.md`: test classes and safe commands.
 - `docs/developer_workflow.md`: contribution workflow.
 - `docs/repo_governance.md`: governance and approval gates.
+- `docs/test_strategy_matrix.md`: test profile matrix.
+- `docs/ci_matrix.md`: CI lane policy.
 - `docs/documentation_map.md`: documentation ownership map.
 - `docs/documentation_consolidation_plan.md`: future documentation cleanup plan.
