@@ -45,9 +45,10 @@ Task packages and memo-build work packages:
 
 - `Codex_Tasks/Memo_Build/00_MASTER_MEMO_ROADMAP.md`
 - `Codex_Tasks/Memo_Build/00_TEMPLATE_MEMO_PROFILE_TASK.md`
+- `Codex_Tasks/Memo_Build/README.md`
 - `Codex_Tasks/Memo_Build/01_MEMO_01_DEPTH_CLEANUP.md` through `18_BOARD_LEVEL_BUDGET_SUMMARY.md`
 
-These files are backlog/task design documents. They overlap with `PROJECT_MEMO_REGISTRY.md` and `PROJECT_NEXT_MEMOS_PLAN.md`, but remain useful until memo planning is consolidated.
+These files are backlog/task design documents. They overlap with `PROJECT_MEMO_REGISTRY.md` and `PROJECT_NEXT_MEMOS_PLAN.md`, but remain useful until memo planning is consolidated. `Codex_Tasks/Memo_Build/README.md` labels the folder as task backlog and points to current public and roadmap entrypoints.
 
 ## governance_doctrine_docs
 
@@ -67,7 +68,7 @@ Governance, QA, release, and memo-factory doctrine:
 - `docs/ANALYTICAL_MEMO_VISUAL_STANDARD.md`
 - `docs/DOCX_VISUAL_QA_GATE.md`
 
-Known duplicate: `PROJECT_INSTRUCTIONS.md` and `99_docs/PROJECT_INSTRUCTIONS.md` are currently identical. Known duplicate: root `golden_memo_pack/` and `99_docs/golden_memo_pack/` currently contain identical shared files. Keep both copies until a separate consolidation task selects the canonical owner.
+Known duplicate: `PROJECT_INSTRUCTIONS.md` and `99_docs/PROJECT_INSTRUCTIONS.md` are intentionally preserved and now include ownership notes. Known duplicate: root `golden_memo_pack/` and `99_docs/golden_memo_pack/` are intentionally preserved and their README files now include ownership notes. Keep both copies until a separate consolidation task selects the canonical owner.
 
 ## do_not_delete_without_review
 
@@ -95,5 +96,7 @@ Candidates for later documentation-only consolidation:
 - Choose one canonical owner for root `golden_memo_pack/` vs `99_docs/golden_memo_pack/`.
 - Consolidate memo roadmap state across `PROJECT_MEMO_REGISTRY.md`, `PROJECT_NEXT_MEMOS_PLAN.md`, and `Codex_Tasks/Memo_Build/`.
 - Add archive labels to historical handoff docs before considering deletion.
+
+Stage 2.3-2.5 ownership labels have been added for the project-instructions duplicate group, the golden memo pack duplicate group, and the memo-build task backlog README. This is labeling only; no deletion, moving, or consolidation execution has occurred.
 
 Any consolidation must be a separate reviewed task. Do not combine it with business logic, formula, schema, or output contract changes.

@@ -1,5 +1,9 @@
 # PROJECT_INSTRUCTIONS.md — [Analytics]
 
+Status: preserved governance copy / duplicate pending future consolidation.
+
+Root `PROJECT_INSTRUCTIONS.md` is the current project-level entrypoint. This file is preserved for governance-package continuity and must stay aligned with the root copy until a later explicit consolidation task selects a single canonical owner. Do not delete either file in this batch. See `../docs/documentation_map.md` and `../docs/documentation_consolidation_plan.md`.
+
 ## Role of the project
 
 `[Analytics]` is the working project for direct analytical work: calculations, data interpretation, management analysis, financial audit logic, metric explanation, analytical notes, and evidence-based conclusions.

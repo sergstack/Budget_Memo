@@ -83,6 +83,8 @@ Do not remove any duplicate until the canonical owner is chosen and the replacem
 
 ### Step 1: Label Ownership
 
+Status: partially implemented.
+
 Add short owner/status notes to duplicated documents:
 
 - canonical current;
@@ -92,6 +94,16 @@ Add short owner/status notes to duplicated documents:
 - duplicate preserved pending review.
 
 Allowed changes: docs-only labels and links.
+
+Implemented labels:
+
+- `PROJECT_INSTRUCTIONS.md`
+- `99_docs/PROJECT_INSTRUCTIONS.md`
+- `golden_memo_pack/README.md`
+- `99_docs/golden_memo_pack/README.md`
+- `Codex_Tasks/Memo_Build/README.md`
+
+This is partial labeling only. Consolidation is not complete, and no deletion or moving has occurred.
 
 ### Step 2: Choose Canonical Owners
 
