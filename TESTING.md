@@ -16,6 +16,9 @@ For the full test-profile policy and CI lane policy, see:
 
 - [Test strategy matrix](docs/test_strategy_matrix.md)
 - [CI matrix](docs/ci_matrix.md)
+- [Local regression plan](docs/local_regression_plan.md)
+- [Artifact validation matrix](docs/artifact_validation_matrix.md)
+- [Performance and refactor gate](docs/performance_refactor_gate.md)
 
 For public review and contribution workflow context, see:
 
@@ -30,6 +33,7 @@ python3 -m unittest discover -s tests -q
 
 This is the local full unit test command. Some tests may require ignored local data, generated artifacts, or local QA fixtures and are not suitable for public GitHub CI unless explicitly classified as data-free.
 It is local validation and not the default public CI command.
+Run it only with explicit authorization unless the selected modules are proven public-data-free.
 
 ## Run Selected Tests
 
@@ -65,6 +69,7 @@ python3 -m unittest tests.test_mart_outputs -q
 ```
 
 Do not run these checks in public CI.
+Use [Local regression plan](docs/local_regression_plan.md) and [Artifact validation matrix](docs/artifact_validation_matrix.md) to select the authorized local scope before running them.
 
 ## Report-Generation Checks
 

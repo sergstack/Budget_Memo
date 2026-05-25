@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from scripts.check_test_strategy import (
+    REQUIRED_FILES,
     check_required_files,
     check_text_markers,
     check_workflow,
@@ -14,6 +15,14 @@ from scripts.check_test_strategy import (
 class TestStrategyCheckTest(unittest.TestCase):
     def test_required_strategy_files_exist(self) -> None:
         self.assertEqual(check_required_files(), [])
+
+    def test_stage_5_strategy_files_are_required(self) -> None:
+        required = {
+            "docs/local_regression_plan.md",
+            "docs/artifact_validation_matrix.md",
+            "docs/performance_refactor_gate.md",
+        }
+        self.assertTrue(required.issubset(REQUIRED_FILES))
 
     def test_required_text_markers_exist(self) -> None:
         self.assertEqual(check_text_markers(), {})

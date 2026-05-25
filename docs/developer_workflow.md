@@ -25,6 +25,7 @@ python3 scripts/verify_memo_factory_quality_gates.py --config config/memo_factor
 These checks do not prove the full financial pipeline. They only verify public repository safety and data-free configuration readiness.
 
 For test-profile classification and CI policy, see `docs/test_strategy_matrix.md` and `docs/ci_matrix.md`.
+For local-only regression planning, see `docs/local_regression_plan.md`, `docs/artifact_validation_matrix.md`, and `docs/performance_refactor_gate.md`.
 
 ## Local Data-Dependent Checks
 
