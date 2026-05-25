@@ -75,9 +75,26 @@ def test_memo02_draft_docx_visible_body_has_no_forbidden_english_phrases(
     result = pilot.run_monthly_plan_fact_standard_draft_release_pilot(tmp_path / "out", source_paths)
     text = docx_text(Path(result["docx_path"]))
 
-    assert "Область чернового пилота" in text
-    assert "Сводка исходного контекста" in text
+    assert "Назначение чернового пилота" in text
+    assert "Использование исходного контекста" in text
+    assert "Сводка готовности черновика" in text
     assert_no_forbidden_visible_english(text)
+
+
+def test_memo02_draft_content_builder_includes_source_boundaries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pilot, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_source_files(tmp_path / "sources")
+
+    result = pilot.run_monthly_plan_fact_standard_draft_release_pilot(tmp_path / "out", source_paths)
+    text = docx_text(Path(result["docx_path"]))
+
+    assert "Как используется" in text
+    assert "Что не делается" in text
+    assert "Не переносит доказательства в DOCX" in text
+    assert "Не копирует изображения и графические пакеты" in text
+    assert "Финансовые показатели, формулы и управленческие выводы" in text
 
 
 def test_visual_qa_blocked_blocks_release_manifest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

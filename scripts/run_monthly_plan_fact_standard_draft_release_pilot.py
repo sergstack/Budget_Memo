@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from io import StringIO
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -163,12 +165,9 @@ def run_monthly_plan_fact_standard_draft_release_pilot(
 
 
 def build_memo02_standard_draft_contract(source_text: dict[str, str], period: str) -> MemoDisplayContract:
-    source_rows = [
-        ["Описание пакета", "файл найден"],
-        ["Проверка пакета", "файл найден"],
-        ["Карта подтверждений", "файл найден"],
-        ["Каталог графиков", "файл найден"],
-    ]
+    source_rows = _source_usage_rows(source_text)
+    evidence_rows = _csv_data_row_count(source_text["evidence_map"])
+    chart_rows = _csv_data_row_count(source_text["chart_metadata"])
     return MemoDisplayContract(
         memo_id=MEMO_ID,
         memo_profile=MEMO_PROFILE,
@@ -181,14 +180,14 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
         sections=[
             MemoSection(
                 section_id="scope",
-                title="Область чернового пилота",
+                title="Назначение чернового пилота",
                 blocks=[
                     MemoBlock(
                         block_type="paragraph",
                         text=(
-                            "Этот черновик проверяет цепочку от контракта отображения записки до DOCX, визуальной проверки "
-                            "и манифеста выпуска для стандартного профиля ежемесячной записки План-Факт без изменения "
-                            "принятых артефактов."
+                            "Этот черновик показывает, как стандартная ежемесячная записка План-Факт может проходить "
+                            "новую цепочку выпуска: контракт отображения, сборка DOCX, визуальная проверка и манифест. "
+                            "Пилот не является принятой бизнес-версией записки и не заменяет финальные материалы."
                         ),
                     ),
                     MemoBlock(
@@ -197,30 +196,59 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                             "Исходные файлы используются только для чтения.",
                             "Промышленный генератор DOCX не вызывается.",
                             "Слои исходных данных, подготовки, витрин, графиков, отчётов и проверок не пересобираются.",
+                            "Финансовые показатели, формулы и управленческие выводы в этом пилоте не пересчитываются.",
                         ],
                     ),
+                ],
+            ),
+            MemoSection(
+                section_id="source_use",
+                title="Использование исходного контекста",
+                blocks=[
                     MemoBlock(
                         block_type="table",
                         table=MemoTable(
-                            headers=["Источник", "Статус чтения пилотом"],
+                            headers=["Источник", "Как используется", "Что не делается"],
                             rows=source_rows,
-                            caption="Проверяется только наличие источников; финансовые показатели не пересчитываются.",
+                            caption="Пилот фиксирует состав источников и границы использования без пересчёта финансовых данных.",
+                        ),
+                    ),
+                    MemoBlock(
+                        block_type="paragraph",
+                        text=(
+                            "Описание пакета и файл проверки используются как контекст готовности. Карта подтверждений "
+                            "и каталог графиков используются как справочники для будущей трассировки, но изображения, "
+                            "табличные выгрузки и финальные отчёты не встраиваются."
                         ),
                     ),
                 ],
             ),
             MemoSection(
                 section_id="source_summary",
-                title="Сводка исходного контекста",
+                title="Сводка готовности черновика",
                 blocks=[
                     MemoBlock(block_type="paragraph", text=_source_presence_note(source_text["readme"], "описание пакета")),
                     MemoBlock(block_type="paragraph", text=_source_presence_note(source_text["package_qa"], "проверка пакета")),
+                    MemoBlock(
+                        block_type="table",
+                        table=MemoTable(
+                            headers=["Справочник", "Статус"],
+                            rows=[
+                                ["Карта подтверждений", _catalog_status(evidence_rows)],
+                                ["Каталог графиков", _catalog_status(chart_rows)],
+                            ],
+                            caption="Справочники проверяются только на читаемость и наличие строк данных.",
+                        ),
+                    ),
                     MemoBlock(
                         block_type="chart",
                         chart=MemoChart(
                             chart_id="memo02_standard_chart_catalog",
                             title="Каталог графиков",
-                            caption="Метаданные графиков прочитаны только как справочный каталог; изображения не встраиваются.",
+                            caption=(
+                                "Графический блок оставлен как текстовая ссылка на каталог. Изображения и промышленные "
+                                "графические пакеты в черновой пилот не копируются."
+                            ),
                         ),
                     ),
                     MemoBlock(
@@ -228,8 +256,9 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                         limitation=MemoLimitation(
                             title="Ограничения черновика",
                             text=(
-                                "Этот пилот проверяет только механику цепочки выпуска. Он не пересчитывает показатели План-Факт, "
-                                "не переинтерпретирует бизнес-логику и не заменяет принятый артефакт записки."
+                                "Черновик подтверждает техническую готовность новой цепочки выпуска на одном выбранном профиле. "
+                                "Он не утверждает производственную готовность, не меняет источник истины и не должен использоваться "
+                                "как финальная управленческая записка."
                             ),
                             severity="только цепочка выпуска",
                         ),
@@ -238,7 +267,10 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
                         block_type="action_table",
                         action_items=[
                             MemoActionItem(
-                                action="Проверить выходы чернового пилота до любой задачи промышленного подключения.",
+                                action=(
+                                    "Проверить русскоязычный текст, визуальную диагностику и манифест перед отдельной задачей "
+                                    "промышленного подключения."
+                                ),
                                 owner="Сопровождающий репозитория",
                                 status="открыто",
                                 marker="candidate",
@@ -253,8 +285,17 @@ def build_memo02_standard_draft_contract(source_text: dict[str, str], period: st
         appendix=[
             MemoBlock(
                 block_type="evidence_appendix",
-                text="Категории источников, использованные черновым пилотом только для чтения.",
-                evidence_refs=["описание пакета", "проверка пакета", "карта подтверждений", "каталог графиков"],
+                text=(
+                    "Приложение перечисляет категории источников, прочитанные пилотом. Содержимое исходных файлов "
+                    "не переносится в финальные папки и не добавляется в Git."
+                ),
+                evidence_refs=[
+                    "описание пакета",
+                    "проверка пакета",
+                    "карта подтверждений",
+                    "каталог графиков",
+                    "выходной каталог, переданный через параметр --out",
+                ],
                 appendix_only=True,
             )
         ],
@@ -297,6 +338,34 @@ def _source_presence_note(text: str, source_label: str) -> str:
     if not lines:
         return f"Файл «{source_label}» найден, но не содержит читаемого текста."
     return f"Файл «{source_label}» найден и прочитан в режиме только для чтения."
+
+
+def _source_usage_rows(source_text: dict[str, str]) -> list[list[str]]:
+    return [
+        ["Описание пакета", _source_use_status(source_text["readme"]), "Не переписывает статус финальных артефактов"],
+        ["Проверка пакета", _source_use_status(source_text["package_qa"]), "Не заменяет действующие проверки качества"],
+        ["Карта подтверждений", _source_use_status(source_text["evidence_map"]), "Не переносит доказательства в DOCX"],
+        ["Каталог графиков", _source_use_status(source_text["chart_metadata"]), "Не копирует изображения и графические пакеты"],
+    ]
+
+
+def _source_use_status(text: str) -> str:
+    if not [line for line in text.splitlines() if line.strip()]:
+        return "файл найден, содержимое пустое"
+    return "файл найден и прочитан"
+
+
+def _csv_data_row_count(text: str) -> int:
+    rows = [row for row in csv.reader(StringIO(text)) if any(cell.strip() for cell in row)]
+    if not rows:
+        return 0
+    return max(0, len(rows) - 1)
+
+
+def _catalog_status(data_rows: int) -> str:
+    if data_rows <= 0:
+        return "файл читается, строки данных не найдены"
+    return "файл читается, строки данных найдены"
 
 
 def _blocked_manifest(
