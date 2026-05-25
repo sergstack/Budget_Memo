@@ -102,6 +102,10 @@ def test_analytical_docx_visible_body_is_russian_without_forbidden_terms(
         assert heading in text
     assert_no_forbidden_visible_english(text)
     for term in [
+        "memo02",
+        "Delta",
+        "ABS",
+        "Word",
         "narrative",
         "memo02_standard_final_text",
         "standard_final_chart_metadata",
@@ -117,7 +121,6 @@ def test_analytical_docx_visible_body_is_russian_without_forbidden_terms(
         assert term not in text
     for term in [
         "управленческий текст",
-        "Идентификатор графика",
         "финальный текст стандартной записки",
         "карта подтверждений",
         "реестр графиков стандартного пакета",
@@ -137,7 +140,8 @@ def test_chart_interpretations_and_metadata_are_reflected_in_contract(
     interpretations = json.loads((tmp_path / "draft_out" / "chart_interpretations.json").read_text(encoding="utf-8"))
 
     assert interpretations[0]["chart_id"] == "planning_quality_frequency_impact"
-    assert "управленческий сигнал проверки" in interpretations[0]["interpretation"]
+    for key in ["what_shows", "management_meaning", "what_to_check", "limitation"]:
+        assert interpretations[0][key]
     chart_blocks = [
         block
         for section in contract["sections"]
@@ -147,6 +151,22 @@ def test_chart_interpretations_and_metadata_are_reflected_in_contract(
     assert chart_blocks
     assert chart_blocks[0]["chart"]["chart_id"] == "planning_quality_frequency_impact"
     assert chart_blocks[0]["chart"]["source_ref"].endswith("planning_quality_frequency_impact.png")
+
+
+def test_chart_interpretation_blocks_are_business_readable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(flow, "diagnose_docx_visual_quality", fake_pass_visual_qa)
+    source_paths = write_analytical_sources(tmp_path / "sources")
+
+    result = flow.run_memo02_standard_analytical_draft_release_flow(tmp_path / "draft_out", source_paths)
+    text = docx_text(Path(result["docx_path"]))
+
+    assert "Что показывает график:" in text
+    assert "Управленческий смысл:" in text
+    assert "Что проверить:" in text
+    assert "Ограничение:" in text
+    assert "Идентификатор графика" not in text
 
 
 def test_release_manifest_pass_when_visual_qa_passes(
@@ -256,11 +276,11 @@ def write_analytical_sources(root: Path) -> flow.Memo02AnalyticalSourcePaths:
     chart_rows = [
         {
             "chart_id": "planning_quality_frequency_impact",
-            "title_ru": "Качество планирования: частота и денежное влияние, 2026-04",
+            "title_ru": "Качество планирования: частота и ABS влияние, 2026-04",
             "image_path": str(image_path),
             "period": "2026-04",
             "source": "принятый пакет данных: срезы исполнения и разрывов",
-            "limitation": "Частота сигналов не равна денежной существенности.",
+            "limitation": "ABS показывает масштаб, а Delta не подтверждает причину.",
         }
     ]
     standard_chart_metadata.write_text(json.dumps(chart_rows, ensure_ascii=False, indent=2), encoding="utf-8")
