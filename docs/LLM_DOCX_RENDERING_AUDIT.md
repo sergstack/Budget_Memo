@@ -54,4 +54,6 @@ MemoDisplayContract -> canonical renderer -> visual QA gate -> release manifest
 
 `src/memo_release_manifest.py` now defines the standalone Release Manifest v1 layer. It is not wired into production generation yet.
 
+`scripts/run_synthetic_memo_release_pilot.py` now proves the synthetic-only MemoDisplayContract -> renderer -> visual QA -> release manifest chain. It is not wired into production generation yet.
+
 Do not combine renderer consolidation with formula, schema, output-contract, prompt, QA-gate, or business-logic changes.
