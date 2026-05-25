@@ -260,6 +260,23 @@ COLUMN_NAME_MAPPING_RU = {
     "mom_metric_grain": "Гранулярность MoM",
     "mom_signal_source_slice": "Источник классификации MoM",
     "mom_signal_metric_grain": "Гранулярность классификации MoM",
+    "flow_prior_year_value_eur": "Flow факт прошлого года, EUR",
+    "flow_yoy_delta_eur": "Flow YoY отклонение, EUR",
+    "flow_abs_yoy_delta_eur": "ABS Flow YoY отклонение, EUR",
+    "flow_yoy_pct": "Flow YoY, %",
+    "flow_prior_year_available_flag": "Есть Flow база прошлого года",
+    "flow_weak_yoy_base_flag": "Слабая Flow YoY база",
+    "flow_no_yoy_base_flag": "Нет Flow YoY базы",
+    "flow_yoy_rank": "Ранг Flow YoY",
+    "flow_previous_month_value_eur": "Flow факт предыдущего месяца, EUR",
+    "flow_mom_delta_eur": "Flow MoM отклонение, EUR",
+    "flow_abs_mom_delta_eur": "ABS Flow MoM отклонение, EUR",
+    "flow_mom_pct": "Flow MoM, %",
+    "flow_mom_rank": "Ранг Flow MoM",
+    "flow_yoy_source_slice": "Источник Flow YoY",
+    "flow_yoy_metric_grain": "Гранулярность Flow YoY",
+    "flow_mom_source_slice": "Источник Flow MoM",
+    "flow_mom_metric_grain": "Гранулярность Flow MoM",
     "localization_source_slice": "Источник локализации",
     "localization_metric_grain": "Гранулярность локализации",
     "planning_source_slice": "Источник планового риска",
@@ -757,6 +774,93 @@ def build_mom_slices(plan_fact: dict[str, pd.DataFrame]) -> dict[str, pd.DataFra
     return result
 
 
+def build_flow_yoy_mom_slice(flow: pd.DataFrame) -> pd.DataFrame:
+    if flow.empty:
+        return pd.DataFrame(
+            columns=[
+                "period_month",
+                "period_year",
+                "month_no",
+                "period_type",
+                "flow_metric",
+                "flow_value_eur",
+                "flow_value_source",
+                "flow_uses_plan_fallback_flag",
+                "flow_prior_year_value_eur",
+                "flow_yoy_delta_eur",
+                "flow_abs_yoy_delta_eur",
+                "flow_yoy_pct",
+                "flow_prior_year_available_flag",
+                "flow_weak_yoy_base_flag",
+                "flow_no_yoy_base_flag",
+                "flow_yoy_rank",
+                "flow_previous_month_value_eur",
+                "flow_mom_delta_eur",
+                "flow_abs_mom_delta_eur",
+                "flow_mom_pct",
+                "flow_mom_rank",
+                "source_slice",
+            ]
+        )
+
+    value_columns = {"IN": "in_eur", "OUT": "out_eur", "IN-OUT": "in_out_eur"}
+    frames = []
+    for metric, value_col in value_columns.items():
+        part = flow[
+            [
+                "period_month",
+                "period_type",
+                value_col,
+                "flow_value_source",
+                "flow_uses_plan_fallback_flag",
+            ]
+        ].copy()
+        part["flow_metric"] = metric
+        part = part.rename(columns={value_col: "flow_value_eur"})
+        frames.append(part)
+    result = pd.concat(frames, ignore_index=True)
+    month_dt = pd.to_datetime(result["period_month"] + "-01", errors="coerce")
+    result["period_year"] = month_dt.dt.year.astype("Int64")
+    result["month_no"] = month_dt.dt.month
+
+    current = result[
+        [
+            "flow_metric",
+            "period_year",
+            "month_no",
+            "flow_value_eur",
+        ]
+    ].copy()
+    prior = current.rename(
+        columns={
+            "flow_value_eur": "flow_prior_year_value_eur",
+            "period_year": "prior_year",
+        }
+    )
+    prior["period_year"] = prior["prior_year"] + 1
+    result = result.merge(
+        prior[["flow_metric", "period_year", "month_no", "flow_prior_year_value_eur"]],
+        on=["flow_metric", "period_year", "month_no"],
+        how="left",
+    )
+    result["flow_yoy_delta_eur"] = result["flow_value_eur"] - result["flow_prior_year_value_eur"]
+    result["flow_abs_yoy_delta_eur"] = result["flow_yoy_delta_eur"].abs()
+    result["flow_yoy_pct"] = safe_div(result["flow_yoy_delta_eur"], result["flow_prior_year_value_eur"])
+    result["flow_prior_year_available_flag"] = result["flow_prior_year_value_eur"].notna().astype(int)
+    result["flow_weak_yoy_base_flag"] = result["flow_prior_year_value_eur"].abs().lt(THRESHOLDS["weak_base_threshold_eur"]).fillna(True).astype(int)
+    result["flow_no_yoy_base_flag"] = result["flow_prior_year_available_flag"].eq(0).astype(int)
+    result = with_rank(result, "flow_yoy_rank", "flow_abs_yoy_delta_eur")
+
+    result = result.sort_values(["flow_metric", "period_month"]).reset_index(drop=True)
+    result["flow_previous_month_value_eur"] = result.groupby("flow_metric")["flow_value_eur"].shift(1)
+    result["flow_mom_delta_eur"] = result["flow_value_eur"] - result["flow_previous_month_value_eur"]
+    result["flow_abs_mom_delta_eur"] = result["flow_mom_delta_eur"].abs()
+    result["flow_mom_pct"] = safe_div(result["flow_mom_delta_eur"], result["flow_previous_month_value_eur"])
+    result = with_rank(result, "flow_mom_rank", "flow_abs_mom_delta_eur")
+    result["source_slice"] = "slice_flow_yoy_mom_month"
+    return result
+
+
 def build_localization_slices(plan_fact: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     cfo = plan_fact["slice_plan_fact_article_cfo"].copy()
     article_total = cfo.groupby("article", as_index=False).agg(article_abs_delta_eur=("abs_delta_eur", "sum"))
@@ -1118,6 +1222,7 @@ def build_compact(catalog: pd.DataFrame) -> pd.DataFrame:
 
 def build_all_slices(full: pd.DataFrame, flow: pd.DataFrame) -> dict[str, pd.DataFrame]:
     slices: dict[str, pd.DataFrame] = {"mart_flow_base_month": flow}
+    slices["slice_flow_yoy_mom_month"] = build_flow_yoy_mom_slice(flow)
     plan_fact = build_plan_fact_slices(full)
     slices.update(plan_fact)
     slices.update(build_yoy_slices(plan_fact))
@@ -1251,6 +1356,39 @@ def enrich_main_full_with_analysis_metrics(main_full: pd.DataFrame, slices: dict
         "planning_metric_grain",
         "article+cfo",
     )
+    flow_metrics = [
+        "flow_prior_year_value_eur",
+        "flow_yoy_delta_eur",
+        "flow_abs_yoy_delta_eur",
+        "flow_yoy_pct",
+        "flow_prior_year_available_flag",
+        "flow_weak_yoy_base_flag",
+        "flow_no_yoy_base_flag",
+        "flow_yoy_rank",
+        "flow_previous_month_value_eur",
+        "flow_mom_delta_eur",
+        "flow_abs_mom_delta_eur",
+        "flow_mom_pct",
+        "flow_mom_rank",
+    ]
+    flow_payload = slices["slice_flow_yoy_mom_month"][
+        ["period_month", "flow_metric", *flow_metrics]
+    ].rename(columns={"flow_metric": "article"})
+    if flow_payload.duplicated(["period_month", "article"], keep=False).any():
+        raise ValueError("Duplicate flow metric enrichment keys in slice_flow_yoy_mom_month")
+    result = result.merge(flow_payload, on=["period_month", "article"], how="left")
+    service_flow_mask = result["row_role"].eq("service_flow_row") & result["article"].isin(SERVICE_VALUES)
+    result.loc[service_flow_mask, "flow_yoy_source_slice"] = "mart_flow_base_month"
+    result.loc[service_flow_mask, "flow_yoy_metric_grain"] = "flow_metric+month"
+    result.loc[service_flow_mask, "flow_mom_source_slice"] = "mart_flow_base_month"
+    result.loc[service_flow_mask, "flow_mom_metric_grain"] = "flow_metric+month"
+    flow_metadata = [
+        "flow_yoy_source_slice",
+        "flow_yoy_metric_grain",
+        "flow_mom_source_slice",
+        "flow_mom_metric_grain",
+    ]
+    result.loc[~service_flow_mask, [*flow_metrics, *flow_metadata]] = pd.NA
     result.attrs["pre_enrichment_row_count"] = pre_enrichment_row_count
     return result
 
@@ -1815,6 +1953,113 @@ def validate_period_cutoff(main_full: pd.DataFrame, flow: pd.DataFrame) -> dict[
     }
 
 
+def flow_metrics_match_source(main_full: pd.DataFrame, source: pd.DataFrame, metrics: list[str]) -> bool:
+    if source.empty or not {"period_month", "flow_metric", *metrics}.issubset(source.columns):
+        return False
+    service = main_full[
+        main_full["row_role"].eq("service_flow_row")
+        & main_full["article"].isin(SERVICE_VALUES)
+    ][["period_month", "article", *metrics]].copy()
+    if service.empty:
+        return False
+    source_payload = source[["period_month", "flow_metric", *metrics]].rename(
+        columns={"flow_metric": "article", **{col: f"{col}__source" for col in metrics}}
+    )
+    joined = service.merge(source_payload, on=["period_month", "article"], how="inner")
+    if len(joined) != len(service):
+        return False
+    for metric in metrics:
+        left = pd.to_numeric(joined[metric], errors="coerce")
+        right = pd.to_numeric(joined[f"{metric}__source"], errors="coerce")
+        both_na = left.isna() & right.isna()
+        diff_ok = (left - right).abs().le(0.01).fillna(False)
+        if not bool((both_na | diff_ok).all()):
+            return False
+    return True
+
+
+def validate_flow_metric_enrichment(main_full: pd.DataFrame, slices: dict[str, pd.DataFrame], path: Path) -> dict[str, bool]:
+    flow_yoy_metrics = [
+        "flow_prior_year_value_eur",
+        "flow_yoy_delta_eur",
+        "flow_abs_yoy_delta_eur",
+        "flow_yoy_pct",
+        "flow_yoy_rank",
+    ]
+    flow_mom_metrics = [
+        "flow_previous_month_value_eur",
+        "flow_mom_delta_eur",
+        "flow_abs_mom_delta_eur",
+        "flow_mom_pct",
+        "flow_mom_rank",
+    ]
+    flow_metadata = [
+        "flow_yoy_source_slice",
+        "flow_yoy_metric_grain",
+        "flow_mom_source_slice",
+        "flow_mom_metric_grain",
+    ]
+    service = main_full[main_full["row_role"].eq("service_flow_row") & main_full["article"].isin(SERVICE_VALUES)]
+    business = main_full[~main_full["row_role"].eq("service_flow_row")]
+    flow_slice = slices["slice_flow_yoy_mom_month"]
+    main_headers = set(pd.read_excel(path, sheet_name=SHEET_NAMES["mart_main_full_budget"], nrows=0).columns)
+    required_headers = {
+        "Flow факт прошлого года, EUR",
+        "Flow YoY отклонение, EUR",
+        "ABS Flow YoY отклонение, EUR",
+        "Flow YoY, %",
+        "Flow факт предыдущего месяца, EUR",
+        "Flow MoM отклонение, EUR",
+        "ABS Flow MoM отклонение, EUR",
+        "Flow MoM, %",
+        "Источник Flow YoY",
+        "Гранулярность Flow YoY",
+        "Источник Flow MoM",
+        "Гранулярность Flow MoM",
+    }
+    return {
+        "flow_rows_have_flow_yoy_metrics": bool(
+            not service.empty
+            and set(flow_yoy_metrics).issubset(service.columns)
+            and service["flow_yoy_rank"].notna().all()
+        ),
+        "flow_rows_have_flow_mom_metrics": bool(
+            not service.empty
+            and set(flow_mom_metrics).issubset(service.columns)
+            and service["flow_mom_rank"].notna().all()
+        ),
+        "flow_metrics_source_grain_present": bool(
+            set(flow_metadata).issubset(service.columns)
+            and service[flow_metadata].notna().all().all()
+            and required_headers.issubset(main_headers)
+        ),
+        "flow_metrics_not_joined_to_business_rows": bool(
+            set([*flow_yoy_metrics, *flow_mom_metrics, *flow_metadata]).issubset(main_full.columns)
+            and business[[*flow_yoy_metrics, *flow_mom_metrics, *flow_metadata]].isna().all().all()
+        ),
+        "flow_yoy_metrics_match_flow_base": flow_metrics_match_source(
+            main_full,
+            flow_slice,
+            ["flow_prior_year_value_eur", "flow_yoy_delta_eur", "flow_abs_yoy_delta_eur", "flow_yoy_pct"],
+        ),
+        "flow_mom_metrics_match_flow_base": flow_metrics_match_source(
+            main_full,
+            flow_slice,
+            ["flow_previous_month_value_eur", "flow_mom_delta_eur", "flow_abs_mom_delta_eur", "flow_mom_pct"],
+        ),
+        "regular_yoy_excludes_service_rows": bool(
+            not slices["slice_yoy_article_cfo_month"]["article"].isin(SERVICE_VALUES).any()
+            and not slices["slice_mom_article_cfo_month"]["article"].isin(SERVICE_VALUES).any()
+        ),
+        "regular_yoy_business_metrics_unchanged": metric_values_match_source(
+            main_full,
+            slices["slice_yoy_article_cfo_month"],
+            ["period_month", "period_year", "article", "cfo"],
+            ["prior_year_fact_eur", "yoy_delta_eur", "abs_yoy_delta_eur", "yoy_pct"],
+        ),
+    }
+
+
 def write_configs() -> None:
     write_json(MARTS_DIR / "column_name_mapping_ru.json", COLUMN_NAME_MAPPING_RU)
     write_json(MARTS_DIR / "mart_threshold_config.json", THRESHOLDS)
@@ -1836,6 +2081,7 @@ def write_qa(
     general_excel_checks = validate_general_excel_qa(MARTS_DIR / "mart_full_package.xlsx")
     analysis_metric_checks = validate_analysis_metric_enrichment(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
     period_cutoff_checks = validate_period_cutoff(main_full, flow)
+    flow_metric_checks = validate_flow_metric_enrichment(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
     top_expense = slices["slice_plan_fact_article"].sort_values("abs_delta_eur", ascending=False).head(50)
     service_in_top = bool(top_expense["article"].isin(SERVICE_VALUES).any()) if "article" in top_expense else False
     compact_trace = bool(
@@ -1859,6 +2105,7 @@ def write_qa(
         **general_excel_checks,
         **analysis_metric_checks,
         **period_cutoff_checks,
+        **flow_metric_checks,
         "service_rows_excluded_from_top_expense_deviations": not service_in_top,
         "in_used_as_denominator_for_proportionality_metrics": bool({"plan_to_in_pct", "fact_to_in_pct", "delta_to_in_pct", "abs_delta_to_in_pct"}.issubset(main_full.columns)),
         "in_out_not_summed_across_article_rows": bool(flow["in_out_eur"].notna().any() and "in_out_eur" not in slices["slice_plan_fact_article"].columns),
@@ -1886,6 +2133,7 @@ def write_qa(
         "general_excel_checks": general_excel_checks,
         "analysis_metric_checks": analysis_metric_checks,
         "period_cutoff_checks": period_cutoff_checks,
+        "flow_metric_checks": flow_metric_checks,
         "actuals_closed_through_month": ACTUALS_CLOSED_THROUGH_MONTH,
         "row_counts": {
             "mart_main_full_budget": int(len(main_full)),
