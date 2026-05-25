@@ -310,6 +310,14 @@ class AcceptedMartAndProfileContractTest(unittest.TestCase):
             "counterparty_execution_pct_not_misleading",
             "timing_sheet_candidate_only",
             "refunds_sheet_compact_and_refund_specific",
+            "flow_rows_have_flow_yoy_metrics",
+            "flow_rows_have_flow_mom_metrics",
+            "flow_metrics_source_grain_present",
+            "flow_metrics_not_joined_to_business_rows",
+            "flow_yoy_metrics_match_flow_base",
+            "flow_mom_metrics_match_flow_base",
+            "regular_yoy_excludes_service_rows",
+            "regular_yoy_business_metrics_unchanged",
         ]:
             self.assertTrue(self.mart_qa["checks"][check_name], check_name)
         for check_name in [
@@ -338,6 +346,35 @@ class AcceptedMartAndProfileContractTest(unittest.TestCase):
             "mart_formulas_untouched",
         ]:
             self.assertTrue(self.depth_modes_qa["checks"][check_name], check_name)
+
+    def test_service_flow_rows_have_separate_flow_metrics(self) -> None:
+        main = pd.read_parquet(MART_ARTIFACTS["mart_main_full_budget"])
+        yoy = pd.read_parquet(MARTS_DIR / "slice_yoy_article_cfo_month.parquet")
+        mom = pd.read_parquet(MARTS_DIR / "slice_mom_article_cfo_month.parquet")
+        service_values = {"IN", "OUT", "IN-OUT"}
+        service = main[main["row_role"].eq("service_flow_row") & main["article"].isin(service_values)]
+        business = main[~main["row_role"].eq("service_flow_row")]
+        self.assertFalse(service.empty)
+        self.assertTrue(service["article"].isin(service_values).all())
+        self.assertFalse(yoy["article"].isin(service_values).any())
+        self.assertFalse(mom["article"].isin(service_values).any())
+        self.assertTrue(service["flow_yoy_source_slice"].eq("mart_flow_base_month").all())
+        self.assertTrue(service["flow_mom_source_slice"].eq("mart_flow_base_month").all())
+        self.assertTrue(service["flow_yoy_metric_grain"].eq("flow_metric+month").all())
+        self.assertTrue(service["flow_mom_metric_grain"].eq("flow_metric+month").all())
+        flow_cols = [
+            "flow_prior_year_value_eur",
+            "flow_yoy_delta_eur",
+            "flow_abs_yoy_delta_eur",
+            "flow_yoy_pct",
+            "flow_previous_month_value_eur",
+            "flow_mom_delta_eur",
+            "flow_abs_mom_delta_eur",
+            "flow_mom_pct",
+            "flow_yoy_source_slice",
+            "flow_mom_source_slice",
+        ]
+        self.assertTrue(business[flow_cols].isna().all().all())
 
     def test_chart_package_contract_when_present(self) -> None:
         if self.chart_qa is None:
