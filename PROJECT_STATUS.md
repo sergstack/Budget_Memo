@@ -47,7 +47,7 @@ Active report folder:
 
 - `short` and `deep` depth outputs have corrected semantics but still need business review.
 - Some report-folder naming changed during the pilot; current canonical folder is profile-named.
-- The project is not a git repository, so rollback relies on archives and manifests.
+- The project is now published to GitHub and uses public data-free repository safety checks. Full pipeline validation remains local and data-dependent.
 - Financial conclusions remain bounded by accepted MART, QA, limitations, and evidence.
 
 ## Recommended Next Step
