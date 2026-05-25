@@ -27,3 +27,9 @@ jobs:
 
       - name: Memo factory quality gate config check
         run: python scripts/verify_memo_factory_quality_gates.py --config config/memo_factory_quality_gates.yml
+
+      - name: Test strategy policy check
+        run: python scripts/check_test_strategy.py
+
+      - name: Test strategy unit test
+        run: python -m unittest tests.test_test_strategy -q

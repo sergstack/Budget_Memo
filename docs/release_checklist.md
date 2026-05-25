@@ -28,6 +28,12 @@ python3 scripts/verify_memo_factory_quality_gates.py --config config/memo_factor
 
 Record pass/fail output in the PR.
 
+## Test Profile
+
+- [ ] PR states which test profile was used.
+- [ ] PR states which test profiles were skipped and why.
+- [ ] CI lane choice matches `docs/test_strategy_matrix.md` and `docs/ci_matrix.md`.
+
 ## Data-Dependent Checks
 
 If not run, state why. Common safe reason:

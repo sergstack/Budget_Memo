@@ -50,6 +50,8 @@ Changes touching source code, contracts, schemas, config, prompts, data-dependen
 
 Full pipeline, report generation, and Ollama/live LLM generation require explicit approval before execution.
 
+CI expansion beyond public data-free checks must not add local-data, report-generation, or Ollama/live LLM lanes without explicit approval and a validation design.
+
 ## Documentation Consolidation Policy
 
 Documentation consolidation must happen in small PRs. Label ownership first, add cross-links second, and only propose deletion after a reviewed replacement path exists.

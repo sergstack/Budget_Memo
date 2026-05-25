@@ -19,6 +19,8 @@ Current entrypoints for public reviewers and repository operators:
 - `docs/developer_workflow.md`: public clone and local contributor workflow.
 - `docs/reviewer_quickstart.md`: external reviewer orientation and safe commands.
 - `docs/release_checklist.md`: PR/release readiness checklist.
+- `docs/test_strategy_matrix.md`: test profile ownership and validation boundaries.
+- `docs/ci_matrix.md`: CI lane policy and future CI expansion rules.
 - `docs/public_clone_smoke_check.md`: public clone validation path.
 - `docs/repo_cleanup_policy.md`: cleanup rules and deletion constraints.
 - `docs/repo_governance.md`: repository governance, approval gates, and data/security rules.
