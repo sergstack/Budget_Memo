@@ -176,25 +176,8 @@ def build_memo02_standard_analytical_contract(
 ) -> MemoDisplayContract:
     findings = _extract_key_findings(source_text)
     chart_blocks = [
-        MemoBlock(
-            block_type="chart",
-            chart=MemoChart(
-                chart_id=str(row.get("chart_id", "")),
-                title=str(row.get("title_ru", "")),
-                caption=interpretation["interpretation"],
-                source_ref=str((PROJECT_ROOT / str(row.get("image_path", ""))).resolve()),
-            ),
-        )
+        _chart_block(row, interpretation)
         for row, interpretation in zip(chart_rows, chart_interpretations)
-    ]
-    chart_table_rows = [
-        [
-            _chart_display_name(row),
-            str(row.get("title_ru", "")),
-            str(row.get("source", "")),
-            str(row.get("limitation", "")),
-        ]
-        for row in chart_rows
     ]
     return MemoDisplayContract(
         memo_id=MEMO_ID,
@@ -214,7 +197,8 @@ def build_memo02_standard_analytical_contract(
                         block_type="paragraph",
                         text=(
                             "Записка собирает управленческий черновик по стандартному профилю План-Факт из уже принятых "
-                            "материалов memo02. Черновик не пересчитывает показатели и не заменяет финальные артефакты."
+                            "материалов стандартной записки План-Факт. Черновик не пересчитывает показатели и не заменяет "
+                            "финальные материалы."
                         ),
                     )
                 ],
@@ -267,14 +251,6 @@ def build_memo02_standard_analytical_contract(
                 section_id="charts",
                 title="Графики и интерпретации",
                 blocks=[
-                    MemoBlock(
-                        block_type="table",
-                        table=MemoTable(
-                            headers=["Идентификатор графика", "Название", "Источник", "Ограничение"],
-                            rows=chart_table_rows,
-                            caption="Реестр графиков перенесён из принятого стандартного пакета без пересборки изображений.",
-                        ),
-                    ),
                     *chart_blocks,
                 ],
             ),
@@ -308,7 +284,7 @@ def build_memo02_standard_analytical_contract(
                                     "Проверить текст, графики, визуальную диагностику и манифест перед ручным согласованием",
                                     "Сопровождающий репозитория",
                                     "кандидат",
-                                    "принятые артефакты memo02 и визуальная проверка",
+                                    "принятые материалы стандартной записки План-Факт и визуальная проверка",
                                 ]
                             ],
                             caption="Финальное продвижение не выполняется этим потоком.",
@@ -321,7 +297,11 @@ def build_memo02_standard_analytical_contract(
         appendix=[
             MemoBlock(
                 block_type="evidence_appendix",
-                text="Приложение фиксирует источники, использованные для чернового аналитического выпуска.",
+                text=(
+                    "Приложение фиксирует источники, использованные для чернового аналитического выпуска: "
+                    "финальный текст стандартной записки, карта подтверждений, реестр графиков стандартного пакета "
+                    "и проверка пакета."
+                ),
                 evidence_refs=[
                     "финальный текст стандартной записки",
                     "карта подтверждений",
@@ -367,24 +347,56 @@ def _load_chart_rows(path: Path) -> list[dict]:
 
 
 def _chart_interpretation(row: dict) -> dict:
-    title = str(row.get("title_ru", "")).strip()
-    source = str(row.get("source", "")).strip()
-    limitation = str(row.get("limitation", "")).strip()
+    title = _polish_visible_terms(str(row.get("title_ru", "")).strip())
+    source = _polish_visible_terms(str(row.get("source", "")).strip())
+    limitation = _polish_visible_terms(str(row.get("limitation", "")).strip())
+    check = _chart_check_action(title)
     return {
         "chart_id": str(row.get("chart_id", "")),
         "title": title,
-        "interpretation": (
-            f"График «{title}» используется как управленческий сигнал проверки. "
-            f"Источник: {source}. Ограничение: {limitation}"
-        ),
+        "what_shows": f"Показывает выбранный разрез стандартной записки План-Факт: {title.lower()}.",
+        "management_meaning": f"Помогает определить маршрут управленческого просмотра. Источник: {source}.",
+        "what_to_check": check,
+        "limitation": limitation,
     }
 
 
-def _chart_display_name(row: dict) -> str:
-    title = str(row.get("title_ru", "")).strip()
-    if title:
-        return title
-    return "График стандартного пакета"
+def _chart_block(row: dict, interpretation: dict) -> MemoBlock:
+    title = _polish_visible_terms(str(row.get("title_ru", "")).strip()) or "График стандартного пакета"
+    caption = "\n".join(
+        [
+            f"Что показывает график: {interpretation['what_shows']}",
+            f"Управленческий смысл: {interpretation['management_meaning']}",
+            f"Что проверить: {interpretation['what_to_check']}",
+            f"Ограничение: {interpretation['limitation']}",
+        ]
+    )
+    return MemoBlock(
+        block_type="chart",
+        chart=MemoChart(
+            chart_id=str(row.get("chart_id", "")),
+            title=title,
+            caption=caption,
+            source_ref=str((PROJECT_ROOT / str(row.get("image_path", ""))).resolve()),
+        ),
+    )
+
+
+def _chart_check_action(title: str) -> str:
+    normalized = title.lower()
+    if "планирования" in normalized:
+        return "Сверить, какие группы дают частый сигнал и какие группы дают наибольший денежный масштаб."
+    if "стать" in normalized or "отклон" in normalized:
+        return "Проверить верхние статьи по модулю отклонения и отдельно посмотреть знак отклонения."
+    if "цфо" in normalized:
+        return "Согласовать маршрут просмотра с ответственным ЦФО и проверить связку ЦФО со статьёй."
+    if "факт без плана" in normalized or "план без факта" in normalized:
+        return "Разделить неполноту планирования, перенос периода и возможную ошибку классификации."
+    if "контрагент" in normalized:
+        return "Проверить первичные строки по контрагентам с наибольшим вкладом в модуль отклонения."
+    if "юрлица" in normalized or "валют" in normalized:
+        return "Проверить, не связан ли сигнал с юридическим лицом, валютой или способом отражения операции."
+    return "Проверить первичные строки и подтверждения владельцев бюджета перед управленческим выводом."
 
 
 def _extract_key_findings(narrative: str) -> list[str]:
@@ -393,9 +405,13 @@ def _extract_key_findings(narrative: str) -> list[str]:
         text = re.sub(r"^[#\\-\\s]+", "", raw).strip()
         if not text or text.startswith("|"):
             continue
+        if _looks_like_heading(text):
+            continue
         if any(marker in text.lower() for marker in ["план", "факт", "отклон", "цфо", "провер"]):
-            lines.append(_strip_markdown(text))
-        if len(lines) >= 5:
+            cleaned = _polish_visible_terms(_strip_markdown(text))
+            if cleaned not in lines:
+                lines.append(cleaned)
+        if len(lines) >= 4:
             break
     if lines:
         return lines
@@ -409,7 +425,25 @@ def _extract_key_findings(narrative: str) -> list[str]:
 def _strip_markdown(text: str) -> str:
     text = re.sub(r"`([^`]+)`", r"\1", text)
     text = re.sub(r"\\*\\*([^*]+)\\*\\*", r"\1", text)
-    return text.strip()
+    return _polish_visible_terms(text.strip())
+
+
+def _looks_like_heading(text: str) -> bool:
+    return len(text) <= 80 and not text.endswith(".") and not text.endswith("!") and not text.endswith("?")
+
+
+def _polish_visible_terms(text: str) -> str:
+    replacements = {
+        "memo02": "стандартная записка План-Факт",
+        "Memo02": "стандартная записка План-Факт",
+        "Delta": "отклонение",
+        "ABS": "модуль отклонения",
+        "Word": "документ",
+        "narrative": "управленческий текст",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    return text
 
 
 def _blocked_manifest(
