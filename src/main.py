@@ -53,6 +53,7 @@ P_FACT_COLUMNS = [
 
 MISSING_COUNTERPARTY = "Контрагент не указан"
 TOLERANCE = 0.01
+ACTUALS_CLOSED_THROUGH_MONTH = "2026-04"
 FULL_STAGE_COLUMNS = [
     "Месяц",
     "Дата",
@@ -103,6 +104,21 @@ def month_from_filename(path: Path) -> str:
     if not match:
         raise ValueError(f"Cannot extract month from file name: {path.name}")
     return match.group(1)
+
+
+def classify_period_month(period_month: str, actuals_closed_through_month: str = ACTUALS_CLOSED_THROUGH_MONTH) -> str:
+    month = pd.Period(str(period_month), freq="M")
+    cutoff = pd.Period(str(actuals_closed_through_month), freq="M")
+    return "historical" if month <= cutoff else "planning"
+
+
+def classify_period_series(
+    period_month: pd.Series,
+    actuals_closed_through_month: str = ACTUALS_CLOSED_THROUGH_MONTH,
+) -> pd.Series:
+    cutoff = pd.Period(str(actuals_closed_through_month), freq="M")
+    months = pd.PeriodIndex(period_month.astype(str), freq="M")
+    return pd.Series(np.where(months <= cutoff, "historical", "planning"), index=period_month.index)
 
 
 def norm_text(series: pd.Series) -> pd.Series:
@@ -205,16 +221,16 @@ def build_budget_rows(
         part["ЦФО"] = norm_text(part["ЦФО"])
         part["Код статьи ДДС"] = extract_code(part["Статья ДДС"])
         part["Статья ДДС"] = extract_name(part["Статья ДДС"])
-        has_pf = part["Месяц"].isin(p_fact_months)
-        part_pf = part[has_pf].merge(valid_triples_df, on=["Месяц", "ЦФО", "Код статьи ДДС"], how="inner")
-        part_future = part[~has_pf].merge(valid_pairs_df, on=["ЦФО", "Код статьи ДДС"], how="inner")
-        part = pd.concat([part_pf, part_future], ignore_index=True)
+        is_historical = classify_period_series(part["Месяц"]).eq("historical")
+        part_historical = part[is_historical].merge(valid_triples_df, on=["Месяц", "ЦФО", "Код статьи ДДС"], how="inner")
+        part_planning = part[~is_historical].merge(valid_pairs_df, on=["ЦФО", "Код статьи ДДС"], how="inner")
+        part = pd.concat([part_historical, part_planning], ignore_index=True)
         part["Сумма (план)"] = to_number(part["Сумма, EUR"]).fillna(0.0)
         part["Сумма (факт)"] = 0.0
         part["Контрагент"] = normalize_counterparty(part["Контрагент"])
         part["Тип операции"] = "План"
         part["Дата"] = format_date(part["Дата оплаты"])
-        part["Тип периода"] = np.where(part["Месяц"].isin(p_fact_months), "historical", "future")
+        part["Тип периода"] = classify_period_series(part["Месяц"])
         part["Источник данных"] = "budget_rows"
         part["Юр. лицо"] = part["Юр. лицо"] if "Юр. лицо" in part.columns else ""
         part["Тип контрагента"] = ""
@@ -290,7 +306,7 @@ def build_dds(tmp_path: Path, valid_triples_df: pd.DataFrame) -> pd.DataFrame:
         )
         part["Тип операции"] = np.where(is_player_refund, "Возврат", "Факт")
         part["Дата"] = format_date(part["Дата начисления"])
-        part["Тип периода"] = "historical"
+        part["Тип периода"] = classify_period_month(month)
         part["Источник данных"] = "dds"
         part["Юр. лицо"] = part["Юр. лицо"] if "Юр. лицо" in part.columns else ""
         part["Валюта"] = part["Валюта"] if "Валюта" in part.columns else ""
@@ -390,7 +406,7 @@ def apply_p_fact_adjustments(p_fact: pd.DataFrame, union_df: pd.DataFrame) -> pd
         {
             "Месяц": adjustments["Месяц"],
             "Дата": pd.to_datetime(adjustments["Месяц"] + "-01").dt.strftime("%Y-%m-%d"),
-            "Тип периода": "historical",
+            "Тип периода": classify_period_series(adjustments["Месяц"]),
             "Источник данных": "p-fact_adjustment",
             "ЦФО": adjustments["ЦФО"],
             "Код статьи ДДС": adjustments["Код статьи ДДС"],
@@ -539,12 +555,13 @@ def build_cons_budget_rows(cons_budget: pd.DataFrame, p_fact_months: set[str]) -
     for _, row in cons_budget.iterrows():
         metric = row["metric"]
         plan_value = row["План, EUR"]
-        fact_value = row["Факт, EUR"] if row["Месяц"] in p_fact_months else np.nan
+        period_type = classify_period_month(row["Месяц"])
+        fact_value = row["Факт, EUR"] if period_type == "historical" else np.nan
         rows.append(
             {
                 "Месяц": row["Месяц"],
                 "Дата": f"{row['Месяц']}-01",
-                "Тип периода": "historical",
+                "Тип периода": period_type,
                 "source_mix": "cons_budget",
                 "included_in_reconciliation": 0,
                 "has_plan": int(pd.notna(plan_value) and plan_value != 0),
@@ -672,7 +689,7 @@ def build_p_fact_diagnostic(p_fact: pd.DataFrame) -> pd.DataFrame:
 
 def build_cons_budget_diagnostic(cons_budget: pd.DataFrame, p_fact_months: set[str]) -> pd.DataFrame:
     diagnostic = cons_budget.copy()
-    diagnostic.loc[~diagnostic["Месяц"].isin(p_fact_months), "Факт, EUR"] = np.nan
+    diagnostic.loc[classify_period_series(diagnostic["Месяц"]).eq("planning"), "Факт, EUR"] = np.nan
     diagnostic.insert(0, "source_layer", "cons_budget")
     diagnostic["Дата"] = diagnostic["Месяц"].astype(str) + "-01"
     diagnostic["Статья"] = diagnostic["metric"]
@@ -737,7 +754,7 @@ def build_full_stage(
         stage[col] = stage[col].fillna(stage["Статья ДДС"])
     stage = stage.rename(columns={"Сумма (план)": "План, EUR", "Сумма (факт)": "Факт, EUR"})
     stage["Дата"] = stage["Дата"].fillna(pd.to_datetime(stage["Месяц"] + "-01").dt.strftime("%Y-%m-%d"))
-    stage["Тип периода"] = stage["Тип периода"].replace({"future": "planning"})
+    stage["Тип периода"] = classify_period_series(stage["Месяц"])
     stage["Источник данных"] = stage["Источник данных"].replace({"p-fact_adjustment": "p_fact_adjustment"})
     stage["План, EUR"] = stage["План, EUR"].fillna(0.0)
     stage["Факт, EUR"] = stage["Факт, EUR"].fillna(0.0)
@@ -761,7 +778,13 @@ def build_full_stage(
     stage.loc[adjustment_mask, "Ключ контрагента"] = "p_fact"
     stage = restore_fact_counterparty_keys_from_plan(stage)
     stage["_has_plan"] = np.where(stage["Тип операции"].eq("План") | (adjustment_mask & stage["План, EUR"].ne(0)), 1, 0)
-    stage["_has_fact"] = np.where(stage["Тип операции"].eq("Факт") | (adjustment_mask & stage["Факт, EUR"].ne(0)), 1, 0)
+    after_cutoff = classify_period_series(stage["Месяц"]).eq("planning")
+    stage.loc[after_cutoff & stage["Тип операции"].isin(["Факт", "Корректировка p-fact"]), "Факт, EUR"] = 0.0
+    stage["_has_fact"] = np.where(
+        (stage["Тип операции"].eq("Факт") & stage["Факт, EUR"].ne(0)) | (adjustment_mask & stage["Факт, EUR"].ne(0)),
+        1,
+        0,
+    )
     stage["_has_p_fact_adjustment"] = adjustment_mask.astype(int)
     stage["_has_player_refund"] = stage["is_player_refund"].astype(int)
     stage["_refund_discriminator"] = stage["is_player_refund"].astype(int)
@@ -801,7 +824,7 @@ def build_full_stage(
     aggregated["source_mix"] = aggregated.apply(classify_source_mix, axis=1)
     aggregated = aggregated.drop(columns=["_refund_discriminator"])
     cons_budget = cons_budget.copy()
-    cons_budget.loc[~cons_budget["Месяц"].isin(p_fact_months), "Факт, EUR"] = np.nan
+    cons_budget.loc[classify_period_series(cons_budget["Месяц"]).eq("planning"), "Факт, EUR"] = np.nan
     service_rows = build_cons_budget_rows(cons_budget, p_fact_months)
     aggregated = pd.concat([aggregated, service_rows], ignore_index=True)
     aggregated = add_inout_window(aggregated, cons_budget)
