@@ -2,6 +2,14 @@
 
 This gate applies before any performance optimization, refactor, pipeline change, report-generation change, or artifact-validation change. It is a planning and approval gate only; it does not authorize code changes.
 
+Stage 6 discovery is documented in:
+
+- `docs/performance_refactor_discovery.md`
+- `docs/performance_backlog.md`
+- `docs/refactor_risk_register.md`
+
+Stage 6 is discovery-only. Future implementation requires a separate task, and performance work cannot be bundled with formula, schema, output-contract, prompt, QA-gate, or business-logic changes without explicit approval.
+
 ## Required Before Work Starts
 
 - [ ] Current behavior identified.

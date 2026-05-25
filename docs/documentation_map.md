@@ -24,6 +24,9 @@ Current entrypoints for public reviewers and repository operators:
 - `docs/local_regression_plan.md`: local-only regression profiles and stop rules.
 - `docs/artifact_validation_matrix.md`: local artifact layer validation ownership.
 - `docs/performance_refactor_gate.md`: approval gate for future performance/refactor work.
+- `docs/performance_refactor_discovery.md`: inspected bottleneck and refactor opportunity report.
+- `docs/performance_backlog.md`: future performance task backlog.
+- `docs/refactor_risk_register.md`: refactor risk register and required gates.
 - `docs/public_clone_smoke_check.md`: public clone validation path.
 - `docs/repo_cleanup_policy.md`: cleanup rules and deletion constraints.
 - `docs/repo_governance.md`: repository governance, approval gates, and data/security rules.

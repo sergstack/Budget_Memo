@@ -24,6 +24,14 @@ class TestStrategyCheckTest(unittest.TestCase):
         }
         self.assertTrue(required.issubset(REQUIRED_FILES))
 
+    def test_stage_6_strategy_files_are_required(self) -> None:
+        required = {
+            "docs/performance_refactor_discovery.md",
+            "docs/performance_backlog.md",
+            "docs/refactor_risk_register.md",
+        }
+        self.assertTrue(required.issubset(REQUIRED_FILES))
+
     def test_required_text_markers_exist(self) -> None:
         self.assertEqual(check_text_markers(), {})
 
