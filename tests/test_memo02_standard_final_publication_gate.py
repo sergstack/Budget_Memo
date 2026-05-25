@@ -117,15 +117,16 @@ def test_refuses_overwrite_without_flag(tmp_path: Path, monkeypatch: pytest.Monk
         publish_memo02_standard_final_release(approved_dir, "Publisher")
 
 
-def test_allows_explicit_final_target_under_final_period_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rejects_final_output_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     configure_roots(tmp_path, monkeypatch)
     approved_dir = write_approved_dir(gate.APPROVED_DRAFT_ROOT / "run")
 
-    result = publish_memo02_standard_final_release(approved_dir, "Publisher", target="final")
-
-    target_dir = gate.REPORT_ROOT / "final" / "2026-04"
-    assert Path(result["published_dir"]) == target_dir.resolve()
-    assert (target_dir / "publication_record.json").exists()
+    with pytest.raises(ValueError, match="approved"):
+        publish_memo02_standard_final_release(
+            approved_dir,
+            "Publisher",
+            out_dir=gate.REPORT_ROOT / "final" / "2026-04",
+        )
 
 
 def test_writes_only_publication_output_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -26,14 +26,11 @@ PUBLICATION_RECORD_NAME = "publication_record.json"
 def publish_memo02_standard_final_release(
     approved_dir: Path,
     published_by: str,
-    target: str = "approved",
     out_dir: Path | None = None,
     overwrite: bool = False,
 ) -> dict:
     if not published_by.strip():
         raise ValueError("--published-by is required")
-    if target not in {"approved", "final"}:
-        raise ValueError("target must be approved or final")
 
     approved_dir = Path(approved_dir).expanduser().resolve()
     _assert_approved_source_dir(approved_dir)
@@ -61,8 +58,8 @@ def publish_memo02_standard_final_release(
     if not docx_path.is_file():
         raise FileNotFoundError(f"missing approved DOCX: {docx_path}")
 
-    target_dir = Path(out_dir).expanduser().resolve() if out_dir is not None else REPORT_ROOT / target / manifest.period
-    _assert_publication_target_dir(target_dir, target)
+    target_dir = Path(out_dir).expanduser().resolve() if out_dir is not None else REPORT_ROOT / "approved" / manifest.period
+    _assert_publication_target_dir(target_dir)
     if target_dir.exists() and any(target_dir.iterdir()) and not overwrite:
         raise FileExistsError(f"publication output already exists: {target_dir}")
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -82,7 +79,7 @@ def publish_memo02_standard_final_release(
     publication_record = {
         "published_by": published_by,
         "published_at": datetime.now(timezone.utc).isoformat(),
-        "target": target,
+        "target": "approved",
         "source_approved_dir": str(approved_dir),
         "published_dir": str(target_dir),
         "published_docx_path": str(published_docx),
@@ -100,7 +97,7 @@ def publish_memo02_standard_final_release(
 
     return {
         "status": "published",
-        "target": target,
+        "target": "approved",
         "published_by": published_by,
         "published_dir": str(target_dir),
         "published_docx_path": str(published_docx),
@@ -122,18 +119,17 @@ def _assert_approved_source_dir(path: Path) -> None:
         raise ValueError(f"approved source must be under {root}")
 
 
-def _assert_publication_target_dir(path: Path, target: str) -> None:
-    expected_root = (REPORT_ROOT / target).resolve()
+def _assert_publication_target_dir(path: Path) -> None:
+    expected_root = (REPORT_ROOT / "approved").resolve()
     resolved = path.resolve()
     if resolved != expected_root and expected_root not in resolved.parents:
         raise ValueError(f"publication output must be under {expected_root}")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Publish approved memo02 standard draft package to report publication folder.")
+    parser = argparse.ArgumentParser(description="Publish approved memo02 standard draft package to approved report folder.")
     parser.add_argument("--approved-dir", required=True, type=Path)
     parser.add_argument("--published-by", required=True)
-    parser.add_argument("--target", choices=["approved", "final"], default="approved")
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
@@ -141,7 +137,6 @@ def main() -> int:
     result = publish_memo02_standard_final_release(
         approved_dir=args.approved_dir,
         published_by=args.published_by,
-        target=args.target,
         out_dir=args.out,
         overwrite=args.overwrite,
     )
