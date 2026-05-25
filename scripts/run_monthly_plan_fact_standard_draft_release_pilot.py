@@ -3,9 +3,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.diagnose_docx_visual_quality import diagnose_docx_visual_quality
 from src.memo_display_contract import (
@@ -31,7 +36,6 @@ from src.memo_release_manifest import (
 from src.memo_renderer import render_memo_contract_to_docx
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PILOT_DIR_NAME = "monthly_plan_fact_memo__standard__draft_pilot"
 MEMO_ID = "monthly_plan_fact_memo__standard__draft"
 MEMO_PROFILE = "monthly_plan_fact_memo"
@@ -331,11 +335,32 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run memo02 standard draft-only release pilot.")
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--soffice-bin", default=None)
+    parser.add_argument("--readme", type=Path, default=None)
+    parser.add_argument("--package-qa", type=Path, default=None)
+    parser.add_argument("--evidence-map", type=Path, default=None)
+    parser.add_argument("--chart-metadata", type=Path, default=None)
     args = parser.parse_args()
 
-    result = run_monthly_plan_fact_standard_draft_release_pilot(args.out, soffice_bin=args.soffice_bin)
+    source_paths = _cli_source_paths(args)
+    result = run_monthly_plan_fact_standard_draft_release_pilot(args.out, source_paths, soffice_bin=args.soffice_bin)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 2 if result["status"] == "blocked" else 0
+
+
+def _cli_source_paths(args: argparse.Namespace) -> Memo02DraftSourcePaths | None:
+    paths = [args.readme, args.package_qa, args.evidence_map, args.chart_metadata]
+    if all(path is None for path in paths):
+        return None
+    if any(path is None for path in paths):
+        raise SystemExit(
+            "--readme, --package-qa, --evidence-map, and --chart-metadata must be provided together."
+        )
+    return Memo02DraftSourcePaths(
+        readme=args.readme,
+        package_qa=args.package_qa,
+        evidence_map=args.evidence_map,
+        chart_metadata=args.chart_metadata,
+    )
 
 
 if __name__ == "__main__":
