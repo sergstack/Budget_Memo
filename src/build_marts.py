@@ -87,6 +87,7 @@ COLUMN_NAME_MAPPING_RU = {
     "has_player_refund": "Есть возврат игроку",
     "article_code": "Код статьи ДДС",
     "article_type": "Тип статьи",
+    "article_type_sort": "Тип статьи сортировка",
     "article_level_1": "Статья 1",
     "article_level_2": "Статья 2",
     "article": "Статья",
@@ -161,6 +162,7 @@ COLUMN_NAME_MAPPING_RU = {
     "base_months_available": "Месяцев базы",
     "months_without_base": "Месяцев без базы",
     "planning_risk_flag": "Флаг планового риска",
+    "planning_risk": "Плановый риск",
     "planning_risk_basis": "Основание планового риска",
     "counterparty_fact_eur": "Факт контрагента, EUR",
     "counterparty_plan_eur": "План контрагента, EUR",
@@ -277,6 +279,12 @@ COLUMN_NAME_MAPPING_RU = {
     "flow_yoy_metric_grain": "Гранулярность Flow YoY",
     "flow_mom_source_slice": "Источник Flow MoM",
     "flow_mom_metric_grain": "Гранулярность Flow MoM",
+    "yoy_pct_numerator_eur": "Числитель YoY %, EUR",
+    "yoy_pct_denominator_eur": "Знаменатель YoY %, EUR",
+    "mom_pct_numerator_eur": "Числитель MoM %, EUR",
+    "mom_pct_denominator_eur": "Знаменатель MoM %, EUR",
+    "execution_pct_numerator_eur": "Числитель исполнения, EUR",
+    "execution_pct_denominator_eur": "Знаменатель исполнения, EUR",
     "localization_source_slice": "Источник локализации",
     "localization_metric_grain": "Гранулярность локализации",
     "planning_source_slice": "Источник планового риска",
@@ -301,15 +309,40 @@ SHEET_NAMES = {
     "timing": "15_Timing_Кандидаты",
     "refunds": "16_Refunds",
     "thresholds": "17_Пороги",
+    "mart_main_full_budget_rows": "22_Полный_MART_Строки",
+}
+
+PIVOT_SAFE_MAIN_GRAIN = [
+    "period_month",
+    "period_year",
+    "period_type",
+    "article_type",
+    "article_level_1",
+    "article_level_2",
+    "article",
+    "cfo",
+    "counterparty",
+]
+
+ARTICLE_TYPE_SORT_PREFIX = {
+    "IN": "00_IN",
+    "OUT": "00_OUT",
+    "IN-OUT": "00_IN-OUT",
+    "FIX": "01_FIX",
+    "PROJECT&DEPARTMENT SERVICES": "02_PROJECT&DEPARTMENT SERVICES",
+    "INVEST": "03_INVEST",
+    "FIN SERVICES": "04_FIN SERVICES",
+    "OTHER OUTFLOWS": "05_OTHER OUTFLOWS",
 }
 
 MANAGEMENT_SHEET_GRAINS = {
+    "01_Полный_MART": ["Месяц", "Год", "Тип периода", "Тип статьи", "Статья 1", "Статья 2", "Статья", "ЦФО", "Контрагент"],
     "05_Plan_Fact": ["Месяц", "Статья", "ЦФО"],
     "06_YoY": ["Статья", "ЦФО", "Год", "Номер месяца"],
     "07_MoM": ["Статья", "ЦФО"],
     "08_Локализация": ["Статья", "ЦФО"],
     "09_Плановый_Риск": ["Статья", "ЦФО"],
-    "10_Контрагенты": ["Контрагент", "Ключ контрагента"],
+    "10_Контрагенты": ["Контрагент"],
     "11_Юрлица": ["Юр. лицо"],
     "12_Валюты": ["Валюта"],
     "13_Юрлица_Валюты": ["Юр. лицо", "Валюта"],
@@ -643,8 +676,8 @@ def build_plan_fact_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
         "slice_plan_fact_article": ["article"],
         "slice_plan_fact_article_cfo_month": ["period_month", "period_year", "period_type", "article", "cfo"],
         "slice_plan_fact_article_cfo": ["article", "cfo"],
-        "slice_plan_fact_article_cfo_counterparty_month": ["period_month", "period_year", "period_type", "article", "cfo", "counterparty", "counterparty_key"],
-        "slice_plan_fact_counterparty": ["counterparty", "counterparty_key"],
+        "slice_plan_fact_article_cfo_counterparty_month": ["period_month", "period_year", "period_type", "article", "cfo", "counterparty"],
+        "slice_plan_fact_counterparty": ["counterparty"],
         "slice_plan_fact_legal_entity": ["legal_entity"],
     }
     return {name: with_rank(aggregate_slice(full, keys, name), "abs_delta_rank", "abs_delta_eur") for name, keys in specs.items()}
@@ -657,7 +690,7 @@ def build_yoy_slices(plan_fact: dict[str, pd.DataFrame]) -> dict[str, pd.DataFra
         "slice_yoy_article_cfo_month": (plan_fact["slice_plan_fact_article_cfo_month"], ["article", "cfo"]),
         "slice_yoy_article": (plan_fact["slice_plan_fact_article_month"], ["article"]),
         "slice_yoy_article_cfo": (plan_fact["slice_plan_fact_article_cfo_month"], ["article", "cfo"]),
-        "slice_yoy_counterparty": (plan_fact["slice_plan_fact_article_cfo_counterparty_month"], ["counterparty", "counterparty_key"]),
+        "slice_yoy_counterparty": (plan_fact["slice_plan_fact_article_cfo_counterparty_month"], ["counterparty"]),
         "slice_yoy_legal_entity": (plan_fact["slice_plan_fact_legal_entity"], ["legal_entity"]),
     }
     for name, (df, keys) in specs.items():
@@ -735,7 +768,7 @@ def build_mom_slices(plan_fact: dict[str, pd.DataFrame]) -> dict[str, pd.DataFra
         "slice_mom_article_cfo_month": (plan_fact["slice_plan_fact_article_cfo_month"], ["article", "cfo"]),
         "slice_mom_article": (plan_fact["slice_plan_fact_article_month"], ["article"]),
         "slice_mom_article_cfo": (plan_fact["slice_plan_fact_article_cfo_month"], ["article", "cfo"]),
-        "slice_mom_counterparty": (plan_fact["slice_plan_fact_article_cfo_counterparty_month"], ["counterparty", "counterparty_key"]),
+        "slice_mom_counterparty": (plan_fact["slice_plan_fact_article_cfo_counterparty_month"], ["counterparty"]),
     }
     for name, (df, keys) in specs.items():
         work = df.copy()
@@ -898,7 +931,7 @@ def build_planning_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
         "slice_plan_vs_history_article": ["article"],
         "slice_plan_vs_history_article_cfo_month": ["period_month", "period_year", "article", "cfo"],
         "slice_plan_vs_history_article_cfo": ["article", "cfo"],
-        "slice_plan_vs_history_counterparty": ["counterparty", "counterparty_key"],
+        "slice_plan_vs_history_counterparty": ["counterparty"],
     }
     result = {}
     for name, keys in specs.items():
@@ -924,7 +957,7 @@ def build_planning_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
 
 def build_counterparty_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
-    cp = aggregate_slice(full, ["counterparty", "counterparty_key"], "slice_counterparty_base")
+    cp = aggregate_slice(full, ["counterparty"], "slice_counterparty_base")
     cp = cp.rename(
         columns={
             "fact_eur": "counterparty_fact_eur",
@@ -940,19 +973,27 @@ def build_counterparty_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
     top10 = cp_sorted.head(10)["counterparty_fact_eur"].abs().sum()
     cp["top5_counterparty_share"] = safe_div(pd.Series([top5] * len(cp), index=cp.index), total_fact)
     cp["top10_counterparty_share"] = safe_div(pd.Series([top10] * len(cp), index=cp.index), total_fact)
-    unknown_mask = cp["counterparty"].isin(UNKNOWN_VALUES) | cp["counterparty_key"].isin(UNKNOWN_VALUES)
+    key_quality = (
+        full[~full["row_role"].eq("service_flow_row")]
+        .groupby("counterparty", as_index=False, dropna=False)
+        .agg(
+            unknown_key_rows=("counterparty_key", lambda s: int(s.isin(UNKNOWN_VALUES).sum())),
+            unknown_key_amount_eur=("fact_eur", lambda s: float(s[full.loc[s.index, "counterparty_key"].isin(UNKNOWN_VALUES)].abs().sum())),
+        )
+    )
+    cp = cp.merge(key_quality, on="counterparty", how="left")
+    cp[["unknown_key_rows", "unknown_key_amount_eur"]] = cp[["unknown_key_rows", "unknown_key_amount_eur"]].fillna(0)
+    unknown_mask = cp["counterparty"].isin(UNKNOWN_VALUES)
     cp["unknown_counterparty_rows"] = np.where(unknown_mask, cp["rows_count"], 0)
     cp["unknown_counterparty_amount_eur"] = np.where(unknown_mask, cp["counterparty_fact_eur"].abs(), 0.0)
     cp["unknown_counterparty_share"] = safe_div(cp["unknown_counterparty_amount_eur"], total_fact)
-    cp["unknown_key_rows"] = np.where(cp["counterparty_key"].isin(UNKNOWN_VALUES), cp["rows_count"], 0)
-    cp["unknown_key_amount_eur"] = np.where(cp["counterparty_key"].isin(UNKNOWN_VALUES), cp["counterparty_fact_eur"].abs(), 0.0)
     cp["counterparty_quality_flag"] = np.where((cp["unknown_counterparty_share"].fillna(0) > 0.01) | (cp["unknown_key_rows"] > 0), "warning", "pass")
     return {
         "slice_counterparty_top_by_fact": cp.sort_values("counterparty_fact_eur", key=lambda s: s.abs(), ascending=False).head(100),
         "slice_counterparty_top_by_plan": cp.sort_values("counterparty_plan_eur", key=lambda s: s.abs(), ascending=False).head(100),
         "slice_counterparty_top_by_delta": cp.sort_values("counterparty_abs_delta_eur", ascending=False).head(100),
         "slice_counterparty_unknown": cp[unknown_mask].copy(),
-        "slice_counterparty_missing_key": cp[cp["counterparty_key"].isin(UNKNOWN_VALUES)].copy(),
+        "slice_counterparty_missing_key": full[full["counterparty_key"].isin(UNKNOWN_VALUES)].copy(),
         "slice_counterparty_concentration": cp,
         "slice_counterparty_fact_without_plan": cp[(cp["counterparty_fact_eur"].ne(0)) & (cp["counterparty_plan_eur"].eq(0))].copy(),
         "slice_counterparty_plan_without_fact": cp[(cp["counterparty_plan_eur"].ne(0)) & (cp["counterparty_fact_eur"].eq(0))].copy(),
@@ -967,7 +1008,7 @@ def build_legal_currency_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
     legal["legal_entity_abs_delta_eur"] = legal["abs_delta_eur"]
     legal["qa_status"] = "pass"
     legal["limitation_text"] = "IN ratios are not shown in management Excel because legal entity aggregation is not period-scoped."
-    legal_cp = aggregate_slice(full, ["legal_entity", "counterparty", "counterparty_key"], "slice_legal_entity_counterparty")
+    legal_cp = aggregate_slice(full, ["legal_entity", "counterparty"], "slice_legal_entity_counterparty")
     currency = full.groupby(["currency"], as_index=False, dropna=False).agg(
         currency_original_amount=("source_amount", "sum"),
         currency_eur_amount=("fact_eur", "sum"),
@@ -1050,7 +1091,7 @@ def build_timing_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
     return {
         "slice_timing_candidates_by_article": timing[timing["timing_candidate_flag"].eq(1)].groupby("article", as_index=False).agg(rows_count=("row_id", "size"), abs_delta_eur=("abs_delta_eur", "sum"), timing_status=("timing_status", "first"), timing_basis=("timing_basis", "first"), timing_confidence=("timing_confidence", "first"), expected_reversal_month=("expected_reversal_month", "first")),
         "slice_timing_candidates_by_cfo": timing[timing["timing_candidate_flag"].eq(1)].groupby("cfo", as_index=False).agg(rows_count=("row_id", "size"), abs_delta_eur=("abs_delta_eur", "sum"), timing_status=("timing_status", "first"), timing_basis=("timing_basis", "first"), timing_confidence=("timing_confidence", "first"), expected_reversal_month=("expected_reversal_month", "first")),
-        "slice_timing_candidates_by_counterparty": timing[timing["timing_candidate_flag"].eq(1)].groupby(["counterparty", "counterparty_key"], as_index=False).agg(rows_count=("row_id", "size"), abs_delta_eur=("abs_delta_eur", "sum"), timing_status=("timing_status", "first"), timing_basis=("timing_basis", "first"), timing_confidence=("timing_confidence", "first"), expected_reversal_month=("expected_reversal_month", "first")),
+        "slice_timing_candidates_by_counterparty": timing[timing["timing_candidate_flag"].eq(1)].groupby(["counterparty"], as_index=False, dropna=False).agg(rows_count=("row_id", "size"), abs_delta_eur=("abs_delta_eur", "sum"), timing_status=("timing_status", "first"), timing_basis=("timing_basis", "first"), timing_confidence=("timing_confidence", "first"), expected_reversal_month=("expected_reversal_month", "first")),
         "slice_timing_month_shift_candidates": timing[timing["timing_candidate_flag"].eq(1)].copy(),
     }
 
@@ -1068,7 +1109,7 @@ def build_refund_slices(full: pd.DataFrame) -> dict[str, pd.DataFrame]:
         "slice_refund_impact_by_month": refunds.groupby("period_month", as_index=False).agg(refund_rows=("row_id", "size"), refund_amount_eur=("refund_amount_eur", "sum"), refund_share_of_fact=("refund_share_of_fact", "sum"), refund_impact_flag=("refund_impact_flag", "max")),
         "slice_refund_impact_by_article": refunds.groupby("article", as_index=False).agg(refund_rows=("row_id", "size"), refund_amount_eur=("refund_amount_eur", "sum"), refund_share_of_fact=("refund_share_of_fact", "sum"), refund_impact_flag=("refund_impact_flag", "max")),
         "slice_refund_impact_by_cfo": refunds.groupby("cfo", as_index=False).agg(refund_rows=("row_id", "size"), refund_amount_eur=("refund_amount_eur", "sum"), refund_share_of_fact=("refund_share_of_fact", "sum"), refund_impact_flag=("refund_impact_flag", "max")),
-        "slice_refund_impact_by_counterparty": refunds.groupby(["counterparty", "counterparty_key"], as_index=False).agg(refund_rows=("row_id", "size"), refund_amount_eur=("refund_amount_eur", "sum"), refund_share_of_fact=("refund_share_of_fact", "sum"), refund_impact_flag=("refund_impact_flag", "max")),
+        "slice_refund_impact_by_counterparty": refunds.groupby(["counterparty"], as_index=False, dropna=False).agg(refund_rows=("row_id", "size"), refund_amount_eur=("refund_amount_eur", "sum"), refund_share_of_fact=("refund_share_of_fact", "sum"), refund_impact_flag=("refund_impact_flag", "max")),
     }
 
 
@@ -1393,6 +1434,276 @@ def enrich_main_full_with_analysis_metrics(main_full: pd.DataFrame, slices: dict
     return result
 
 
+def build_pivot_safe_main_full(row_level_full: pd.DataFrame, slices: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    source = row_level_full.copy()
+    grouped = source.groupby(PIVOT_SAFE_MAIN_GRAIN, as_index=False, dropna=False).agg(
+        source_amount=("source_amount", "sum"),
+        plan_eur=("plan_eur", "sum"),
+        fact_eur=("fact_eur", "sum"),
+        included_in_reconciliation=("included_in_reconciliation", "max"),
+        has_plan=("has_plan", "max"),
+        has_fact=("has_fact", "max"),
+        has_p_fact_adjustment=("has_p_fact_adjustment", "max"),
+        has_player_refund=("has_player_refund", "max"),
+        article_code=("article_code", "first"),
+        legal_entity=("legal_entity", join_unique),
+        counterparty_type=("counterparty_type", join_unique),
+        currency=("currency", join_unique),
+        date=("date", "min"),
+        source_mix=("source_mix", join_unique),
+        row_role=("row_role", "first"),
+        rows_count=("row_id", "size"),
+        in_eur=("in_eur", "first"),
+        out_eur=("out_eur", "first"),
+        in_out_eur=("in_out_eur", "first"),
+        stage_in_out_eur=("stage_in_out_eur", "first"),
+        out_to_in_pct=("out_to_in_pct", "first"),
+        in_out_margin_pct=("in_out_margin_pct", "first"),
+        flow_base_status=("flow_base_status", "first"),
+        flow_value_source=("flow_value_source", "first"),
+        flow_uses_plan_fallback_flag=("flow_uses_plan_fallback_flag", "max"),
+        weak_in_base_flag=("weak_in_base_flag", "max"),
+        weak_flow_base_flag=("weak_flow_base_flag", "max"),
+        limitation_text=("limitation_text", join_unique),
+        source_file=("source_file", join_unique),
+        source_row_id=("source_row_id", join_unique),
+    )
+    max_month = pd.to_datetime(grouped["period_month"] + "-01", errors="coerce").max()
+    cutoff_month = pd.Timestamp(f"{ACTUALS_CLOSED_THROUGH_MONTH}-01")
+
+    def shifted_scaffold(months: int) -> pd.DataFrame:
+        source_rows = grouped[~grouped["row_role"].eq("service_flow_row")].copy()
+        source_rows["month_dt"] = pd.to_datetime(source_rows["period_month"] + "-01", errors="coerce") + pd.DateOffset(months=months)
+        source_rows = source_rows[source_rows["month_dt"].le(max_month)].copy()
+        source_rows["period_month"] = source_rows["month_dt"].dt.strftime("%Y-%m")
+        source_rows["period_year"] = source_rows["month_dt"].dt.year
+        source_rows["period_type"] = np.where(source_rows["month_dt"].le(cutoff_month), "historical", "planning")
+        source_rows["source_amount"] = 0.0
+        source_rows["plan_eur"] = 0.0
+        source_rows["fact_eur"] = 0.0
+        source_rows["included_in_reconciliation"] = 0
+        source_rows["has_plan"] = 0
+        source_rows["has_fact"] = 0
+        source_rows["has_p_fact_adjustment"] = 0
+        source_rows["has_player_refund"] = 0
+        source_rows["rows_count"] = 0
+        source_rows["date"] = source_rows["month_dt"]
+        source_rows["source_mix"] = "comparison_scaffold"
+        source_rows["source_file"] = ""
+        source_rows["source_row_id"] = ""
+        return source_rows.drop(columns=["month_dt"], errors="ignore")
+
+    scaffold = pd.concat([shifted_scaffold(1), shifted_scaffold(12)], ignore_index=True, sort=False)
+    if not scaffold.empty:
+        grouped = (
+            pd.concat([grouped, scaffold], ignore_index=True, sort=False)
+            .drop_duplicates(PIVOT_SAFE_MAIN_GRAIN, keep="first")
+            .reset_index(drop=True)
+        )
+    grouped["row_id"] = np.arange(1, len(grouped) + 1)
+    grouped["article_type_sort"] = grouped["article_type"].map(ARTICLE_TYPE_SORT_PREFIX).fillna(grouped["article_type"])
+    grouped["month_dt"] = pd.to_datetime(grouped["period_month"] + "-01", errors="coerce")
+    grouped["limitation_text"] = np.where(
+        grouped["period_type"].eq("planning"),
+        "Planning risk is future budget risk, not actual execution.",
+        grouped["limitation_text"].fillna(""),
+    )
+    grouped = add_core_metrics(grouped)
+    grouped["execution_pct_numerator_eur"] = grouped["fact_eur"]
+    grouped["execution_pct_denominator_eur"] = grouped["plan_eur"]
+    grouped["plan_to_in_pct"] = safe_div(grouped["plan_eur"], grouped["in_eur"])
+    grouped["fact_to_in_pct"] = safe_div(grouped["fact_eur"], grouped["in_eur"])
+    grouped["delta_to_in_pct"] = safe_div(grouped["delta_eur"], grouped["in_eur"])
+    grouped["abs_delta_to_in_pct"] = safe_div(grouped["abs_delta_eur"], grouped["in_eur"])
+
+    business_mask = ~grouped["row_role"].eq("service_flow_row")
+    business = grouped[business_mask].copy()
+    yoy_keys = [col for col in PIVOT_SAFE_MAIN_GRAIN if col not in ["period_month", "period_year", "period_type"]]
+    business["month_no"] = business["month_dt"].dt.month
+    current = business[[*yoy_keys, "period_year", "month_no", "fact_eur"]].rename(columns={"fact_eur": "current_fact_eur"})
+    prior = current.rename(columns={"current_fact_eur": "prior_year_fact_eur", "period_year": "prior_year"})
+    prior["period_year"] = prior["prior_year"] + 1
+    business = business.merge(
+        prior[[*yoy_keys, "period_year", "month_no", "prior_year_fact_eur"]],
+        on=[*yoy_keys, "period_year", "month_no"],
+        how="left",
+    )
+    business["current_fact_eur"] = business["fact_eur"]
+    business["yoy_delta_eur"] = business["current_fact_eur"] - business["prior_year_fact_eur"].fillna(0)
+    business["abs_yoy_delta_eur"] = business["yoy_delta_eur"].abs()
+    business["yoy_pct"] = safe_div(business["yoy_delta_eur"], business["prior_year_fact_eur"])
+    business["yoy_pct_numerator_eur"] = business["yoy_delta_eur"]
+    business["yoy_pct_denominator_eur"] = business["prior_year_fact_eur"]
+    business["yoy_delta_to_in_pct"] = safe_div(business["yoy_delta_eur"], business["in_eur"])
+    business["abs_yoy_delta_to_in_pct"] = safe_div(business["abs_yoy_delta_eur"], business["in_eur"])
+    business["prior_year_available_flag"] = business["prior_year_fact_eur"].notna().astype(int)
+    business["prior_year_month_count"] = business["prior_year_available_flag"]
+    business["weak_yoy_base_flag"] = business["prior_year_fact_eur"].abs().lt(THRESHOLDS["weak_base_threshold_eur"]).fillna(True).astype(int)
+    business["no_yoy_base_flag"] = business["prior_year_available_flag"].eq(0).astype(int)
+    business = with_rank(business, "yoy_rank", "abs_yoy_delta_eur")
+
+    business = business.sort_values([*yoy_keys, "period_month"]).reset_index(drop=True)
+    business["previous_month_fact_eur"] = business.groupby(yoy_keys, dropna=False)["fact_eur"].shift(1)
+    business["current_month_fact_eur"] = business["fact_eur"]
+    business["mom_delta_eur"] = business["current_month_fact_eur"] - business["previous_month_fact_eur"].fillna(0)
+    business["abs_mom_delta_eur"] = business["mom_delta_eur"].abs()
+    business["mom_pct"] = safe_div(business["mom_delta_eur"], business["previous_month_fact_eur"])
+    business["mom_pct_numerator_eur"] = business["mom_delta_eur"]
+    business["mom_pct_denominator_eur"] = business["previous_month_fact_eur"]
+    business["mom_delta_to_in_pct"] = safe_div(business["mom_delta_eur"], business["in_eur"])
+    business["abs_mom_delta_to_in_pct"] = safe_div(business["abs_mom_delta_eur"], business["in_eur"])
+    business = with_rank(business, "mom_rank", "abs_mom_delta_eur")
+
+    hist = (
+        business[business["period_type"].eq("historical")]
+        .groupby(yoy_keys, as_index=False, dropna=False)
+        .agg(historical_base_eur=("fact_eur", "mean"), base_months_available=("period_month", "nunique"))
+    )
+    business = business.merge(hist, on=yoy_keys, how="left", suffixes=("", "__hist"))
+    business["base_months_available"] = business["base_months_available"].fillna(0).astype(int)
+    business["months_without_base"] = np.where(business["base_months_available"].eq(0), 1, 0)
+    business["planning_plan_eur"] = np.where(business["period_type"].eq("planning"), business["plan_eur"], 0.0)
+    business["plan_vs_base_delta_eur"] = business["planning_plan_eur"] - business["historical_base_eur"]
+    business["plan_vs_base_abs_delta_eur"] = business["plan_vs_base_delta_eur"].abs()
+    business["plan_vs_base_pct"] = safe_div(business["plan_vs_base_delta_eur"], business["historical_base_eur"])
+    business["plan_vs_base_to_in_pct"] = safe_div(business["plan_vs_base_delta_eur"], business["in_eur"])
+    business["planning_risk_flag"] = (
+        business["period_type"].eq("planning")
+        & business["plan_vs_base_abs_delta_eur"].ge(THRESHOLDS["planning_risk_threshold_eur"]).fillna(False)
+    ).astype(int)
+    business["planning_risk_basis"] = np.where(business["planning_risk_flag"].eq(1), "future_budget_risk_vs_historical_base", "")
+    business = with_rank(business, "planning_risk_rank", "plan_vs_base_abs_delta_eur")
+    business["yoy_source_slice"] = "slice_yoy_detailed"
+    business["yoy_metric_grain"] = "detailed_business_grain+month"
+    business["mom_source_slice"] = "slice_mom_detailed"
+    business["mom_metric_grain"] = "detailed_business_grain+month"
+    business["localization_source_slice"] = "slice_localization_article_cfo"
+    business["localization_metric_grain"] = "article+cfo"
+    business["planning_source_slice"] = "slice_plan_vs_history_detailed"
+    business["planning_metric_grain"] = "detailed_business_grain+month"
+
+    service = grouped[~business_mask].copy()
+    for col in [
+        "current_fact_eur",
+        "prior_year_fact_eur",
+        "yoy_delta_eur",
+        "abs_yoy_delta_eur",
+        "yoy_pct",
+        "yoy_pct_numerator_eur",
+        "yoy_pct_denominator_eur",
+        "yoy_delta_to_in_pct",
+        "abs_yoy_delta_to_in_pct",
+        "prior_year_available_flag",
+        "prior_year_month_count",
+        "weak_yoy_base_flag",
+        "no_yoy_base_flag",
+        "yoy_rank",
+        "previous_month_fact_eur",
+        "current_month_fact_eur",
+        "mom_delta_eur",
+        "abs_mom_delta_eur",
+        "mom_pct",
+        "mom_pct_numerator_eur",
+        "mom_pct_denominator_eur",
+        "mom_delta_to_in_pct",
+        "abs_mom_delta_to_in_pct",
+        "mom_rank",
+        "historical_base_eur",
+        "base_months_available",
+        "months_without_base",
+        "planning_plan_eur",
+        "plan_vs_base_delta_eur",
+        "plan_vs_base_abs_delta_eur",
+        "plan_vs_base_pct",
+        "plan_vs_base_to_in_pct",
+        "planning_risk_flag",
+        "planning_risk_basis",
+        "planning_risk_rank",
+        "yoy_source_slice",
+        "yoy_metric_grain",
+        "mom_source_slice",
+        "mom_metric_grain",
+        "localization_source_slice",
+        "localization_metric_grain",
+        "planning_source_slice",
+        "planning_metric_grain",
+    ]:
+        service[col] = pd.NA
+
+    result = pd.concat([business, service], ignore_index=True, sort=False)
+    flow_metrics = [
+        "flow_prior_year_value_eur",
+        "flow_yoy_delta_eur",
+        "flow_abs_yoy_delta_eur",
+        "flow_yoy_pct",
+        "flow_prior_year_available_flag",
+        "flow_weak_yoy_base_flag",
+        "flow_no_yoy_base_flag",
+        "flow_yoy_rank",
+        "flow_previous_month_value_eur",
+        "flow_mom_delta_eur",
+        "flow_abs_mom_delta_eur",
+        "flow_mom_pct",
+        "flow_mom_rank",
+    ]
+    flow_payload = slices["slice_flow_yoy_mom_month"][
+        ["period_month", "flow_metric", *flow_metrics]
+    ].rename(columns={"flow_metric": "article"})
+    result = result.merge(flow_payload, on=["period_month", "article"], how="left")
+    service_flow_mask = result["row_role"].eq("service_flow_row") & result["article"].isin(SERVICE_VALUES)
+    result.loc[service_flow_mask, "flow_yoy_source_slice"] = "mart_flow_base_month"
+    result.loc[service_flow_mask, "flow_yoy_metric_grain"] = "flow_metric+month"
+    result.loc[service_flow_mask, "flow_mom_source_slice"] = "mart_flow_base_month"
+    result.loc[service_flow_mask, "flow_mom_metric_grain"] = "flow_metric+month"
+    flow_metadata = ["flow_yoy_source_slice", "flow_yoy_metric_grain", "flow_mom_source_slice", "flow_mom_metric_grain"]
+    result.loc[~service_flow_mask, [*flow_metrics, *flow_metadata]] = pd.NA
+    result.loc[service_flow_mask, "current_fact_eur"] = result.loc[service_flow_mask, "fact_eur"]
+    result.loc[service_flow_mask, "prior_year_fact_eur"] = result.loc[service_flow_mask, "flow_prior_year_value_eur"]
+    result.loc[service_flow_mask, "yoy_delta_eur"] = (
+        result.loc[service_flow_mask, "fact_eur"] - result.loc[service_flow_mask, "flow_prior_year_value_eur"].fillna(0)
+    )
+    result.loc[service_flow_mask, "abs_yoy_delta_eur"] = result.loc[service_flow_mask, "yoy_delta_eur"].abs()
+    result.loc[service_flow_mask, "yoy_pct"] = result.loc[service_flow_mask, "flow_yoy_pct"]
+    result.loc[service_flow_mask, "yoy_pct_numerator_eur"] = result.loc[service_flow_mask, "yoy_delta_eur"]
+    result.loc[service_flow_mask, "yoy_pct_denominator_eur"] = result.loc[service_flow_mask, "flow_prior_year_value_eur"]
+    result.loc[service_flow_mask, "prior_year_available_flag"] = result.loc[service_flow_mask, "flow_prior_year_available_flag"]
+    result.loc[service_flow_mask, "weak_yoy_base_flag"] = result.loc[service_flow_mask, "flow_weak_yoy_base_flag"]
+    result.loc[service_flow_mask, "no_yoy_base_flag"] = result.loc[service_flow_mask, "flow_no_yoy_base_flag"]
+    result.loc[service_flow_mask, "yoy_rank"] = result.loc[service_flow_mask, "flow_yoy_rank"]
+    result.loc[service_flow_mask, "previous_month_fact_eur"] = result.loc[service_flow_mask, "flow_previous_month_value_eur"]
+    result.loc[service_flow_mask, "current_month_fact_eur"] = result.loc[service_flow_mask, "fact_eur"]
+    result.loc[service_flow_mask, "mom_delta_eur"] = (
+        result.loc[service_flow_mask, "fact_eur"] - result.loc[service_flow_mask, "flow_previous_month_value_eur"].fillna(0)
+    )
+    result.loc[service_flow_mask, "abs_mom_delta_eur"] = result.loc[service_flow_mask, "mom_delta_eur"].abs()
+    result.loc[service_flow_mask, "mom_pct"] = result.loc[service_flow_mask, "flow_mom_pct"]
+    result.loc[service_flow_mask, "mom_pct_numerator_eur"] = result.loc[service_flow_mask, "mom_delta_eur"]
+    result.loc[service_flow_mask, "mom_pct_denominator_eur"] = result.loc[service_flow_mask, "flow_previous_month_value_eur"]
+    result.loc[service_flow_mask, "mom_rank"] = result.loc[service_flow_mask, "flow_mom_rank"]
+    result.loc[service_flow_mask, "yoy_source_slice"] = "mart_flow_base_month"
+    result.loc[service_flow_mask, "yoy_metric_grain"] = "flow_metric+month"
+    result.loc[service_flow_mask, "mom_source_slice"] = "mart_flow_base_month"
+    result.loc[service_flow_mask, "mom_metric_grain"] = "flow_metric+month"
+    result["planning_risk"] = result["planning_risk_flag"]
+    result["source_files_count"] = result["source_file"].map(count_joined_values)
+    result["source_rows_count"] = result["source_row_id"].map(count_joined_values)
+    result = result.drop(columns=["source_file", "source_row_id"], errors="ignore")
+    result["source_slice"] = "mart_main_full_budget"
+    result["evidence_id"] = [f"mart_main_full_budget-ROW-{idx + 1:05d}" for idx in range(len(result))]
+    result.attrs["pre_enrichment_row_count"] = len(result)
+    return result.sort_values(PIVOT_SAFE_MAIN_GRAIN, kind="mergesort").reset_index(drop=True)
+
+
+def build_pivot_safe_detail_slices(main_full: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    business = main_full[~main_full["row_role"].eq("service_flow_row")].copy()
+    return {
+        "slice_plan_fact_detailed": business.copy(),
+        "slice_yoy_detailed": business.copy(),
+        "slice_mom_detailed": business.copy(),
+        "slice_plan_vs_history_detailed": business[business["period_type"].eq("planning")].copy(),
+    }
+
+
 def write_parquets(main_full: pd.DataFrame, flow: pd.DataFrame, catalog: pd.DataFrame, compact: pd.DataFrame, slices: dict[str, pd.DataFrame]) -> None:
     main_full.to_parquet(TECHNICAL_OUTPUTS["mart_main_full_budget"], index=False)
     flow.to_parquet(TECHNICAL_OUTPUTS["mart_flow_base_month"], index=False)
@@ -1556,7 +1867,14 @@ def prepare_refunds_excel(df: pd.DataFrame) -> pd.DataFrame:
     return excel_columns(result, columns)
 
 
-def write_excel(main_full: pd.DataFrame, flow: pd.DataFrame, catalog: pd.DataFrame, compact: pd.DataFrame, slices: dict[str, pd.DataFrame]) -> None:
+def write_excel(
+    main_full: pd.DataFrame,
+    flow: pd.DataFrame,
+    catalog: pd.DataFrame,
+    compact: pd.DataFrame,
+    slices: dict[str, pd.DataFrame],
+    row_level_full: pd.DataFrame,
+) -> None:
     path = MARTS_DIR / "mart_full_package.xlsx"
     legal_entity_columns = [
         "legal_entity",
@@ -1641,6 +1959,7 @@ def write_excel(main_full: pd.DataFrame, flow: pd.DataFrame, catalog: pd.DataFra
         SHEET_NAMES["thresholds"]: pd.DataFrame(
             [{"threshold_name": key, "threshold_value": value, "description": "Documented default threshold"} for key, value in THRESHOLDS.items()]
         ),
+        SHEET_NAMES["mart_main_full_budget_rows"]: with_in_denominator_status(row_level_full.head(200_000), "valid_same_period"),
     }
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         for sheet, df in sheet_payloads.items():
@@ -1910,7 +2229,7 @@ def validate_analysis_metric_enrichment(main_full: pd.DataFrame, slices: dict[st
         SHEET_NAMES["localization"],
         SHEET_NAMES["planning_risk"],
     }
-    month_keys = ["period_month", "period_year", "article", "cfo"]
+    month_keys = PIVOT_SAFE_MAIN_GRAIN
     yoy_metrics = ["prior_year_fact_eur", "yoy_delta_eur", "abs_yoy_delta_eur", "yoy_pct"]
     mom_metrics = ["previous_month_fact_eur", "mom_delta_eur", "abs_mom_delta_eur", "mom_pct"]
     return {
@@ -1918,8 +2237,8 @@ def validate_analysis_metric_enrichment(main_full: pd.DataFrame, slices: dict[st
         "main_full_has_yoy_metrics": required_yoy_headers.issubset(main_headers),
         "main_full_has_mom_metrics": required_mom_headers.issubset(main_headers),
         "main_full_has_analysis_metric_grain_metadata": required_metadata_headers.issubset(main_headers),
-        "yoy_metrics_match_source_slice": metric_values_match_source(main_full, slices["slice_yoy_article_cfo_month"], month_keys, yoy_metrics),
-        "mom_metrics_match_source_slice": metric_values_match_source(main_full, slices["slice_mom_article_cfo_month"], month_keys, mom_metrics),
+        "yoy_metrics_match_source_slice": metric_values_match_source(main_full, slices["slice_yoy_detailed"], month_keys, yoy_metrics),
+        "mom_metrics_match_source_slice": metric_values_match_source(main_full, slices["slice_mom_detailed"], month_keys, mom_metrics),
         "analysis_metric_joins_no_duplicate_explosion": int(main_full.attrs.get("pre_enrichment_row_count", -1)) == len(main_full),
         "management_analysis_sheets_preserved": expected_sheets.issubset(set(xl.sheet_names)),
     }
@@ -2053,9 +2372,120 @@ def validate_flow_metric_enrichment(main_full: pd.DataFrame, slices: dict[str, p
         ),
         "regular_yoy_business_metrics_unchanged": metric_values_match_source(
             main_full,
-            slices["slice_yoy_article_cfo_month"],
-            ["period_month", "period_year", "article", "cfo"],
+            slices["slice_yoy_detailed"],
+            PIVOT_SAFE_MAIN_GRAIN,
             ["prior_year_fact_eur", "yoy_delta_eur", "abs_yoy_delta_eur", "yoy_pct"],
+        ),
+    }
+
+
+def validate_pivot_safe_main_full(main_full: pd.DataFrame, slices: dict[str, pd.DataFrame], path: Path) -> dict[str, bool]:
+    xl = pd.ExcelFile(path)
+    duplicate_detail_sheets = {"18_PlanFact_Детально", "19_YoY_Детально", "20_MoM_Детально", "21_ПланРиск_Детально"}
+    required_headers = {
+        "Месяц",
+        "Год",
+        "Тип периода",
+        "Тип статьи",
+        "Статья 1",
+        "Статья 2",
+        "Статья",
+        "ЦФО",
+        "Контрагент",
+    }
+    main_headers = set(pd.read_excel(path, sheet_name=SHEET_NAMES["mart_main_full_budget"], nrows=0).columns)
+    row_level_headers = set(pd.read_excel(path, sheet_name=SHEET_NAMES["mart_main_full_budget_rows"], nrows=0).columns) if SHEET_NAMES["mart_main_full_budget_rows"] in xl.sheet_names else set()
+    expected_existing = {
+        SHEET_NAMES["mart_main_full_budget"],
+        SHEET_NAMES["plan_fact"],
+        SHEET_NAMES["yoy"],
+        SHEET_NAMES["mom"],
+        SHEET_NAMES["localization"],
+        SHEET_NAMES["planning_risk"],
+        SHEET_NAMES["mart_flow_base_month"],
+    }
+    yoy_metrics = ["prior_year_fact_eur", "yoy_delta_eur", "abs_yoy_delta_eur", "yoy_pct"]
+    mom_metrics = ["previous_month_fact_eur", "mom_delta_eur", "abs_mom_delta_eur", "mom_pct"]
+    numerator_cols = {
+        "yoy_pct_numerator_eur",
+        "yoy_pct_denominator_eur",
+        "mom_pct_numerator_eur",
+        "mom_pct_denominator_eur",
+        "execution_pct_numerator_eur",
+        "execution_pct_denominator_eur",
+    }
+    business = main_full[~main_full["row_role"].eq("service_flow_row")].copy()
+    yoy_formula_rows = business[["fact_eur", "prior_year_fact_eur", "yoy_delta_eur"]].dropna(subset=["fact_eur", "yoy_delta_eur"])
+    mom_formula_rows = business[["fact_eur", "previous_month_fact_eur", "mom_delta_eur"]].dropna(subset=["fact_eur", "mom_delta_eur"])
+    return {
+        "main_full_pivot_safe_grain": required_headers.issubset(main_headers),
+        "main_full_no_duplicate_keys": bool(not main_full.duplicated(PIVOT_SAFE_MAIN_GRAIN).any()),
+        "main_full_yoy_calculated_at_pivot_grain": metric_values_match_source(
+            main_full,
+            slices["slice_yoy_detailed"],
+            PIVOT_SAFE_MAIN_GRAIN,
+            yoy_metrics,
+        ),
+        "main_full_mom_calculated_at_pivot_grain": metric_values_match_source(
+            main_full,
+            slices["slice_mom_detailed"],
+            PIVOT_SAFE_MAIN_GRAIN,
+            mom_metrics,
+        ),
+        "main_full_supports_user_pivot_hierarchy": required_headers.issubset(main_headers) and numerator_cols.issubset(main_full.columns),
+        "yoy_delta_equals_current_minus_prior_at_main_grain": bool(
+            not yoy_formula_rows.empty
+            and (yoy_formula_rows["yoy_delta_eur"] - (yoy_formula_rows["fact_eur"] - yoy_formula_rows["prior_year_fact_eur"].fillna(0)))
+            .abs()
+            .le(0.01)
+            .all()
+        ),
+        "mom_delta_equals_current_minus_previous_at_main_grain": bool(
+            not mom_formula_rows.empty
+            and (mom_formula_rows["mom_delta_eur"] - (mom_formula_rows["fact_eur"] - mom_formula_rows["previous_month_fact_eur"].fillna(0)))
+            .abs()
+            .le(0.01)
+            .all()
+        ),
+        "row_level_evidence_sheet_preserved": SHEET_NAMES["mart_main_full_budget_rows"] in xl.sheet_names,
+        "row_level_evidence_sheet_is_row_level": "ID строки источника" in row_level_headers,
+        "excel_no_duplicate_pivot_detail_sheets": duplicate_detail_sheets.isdisjoint(set(xl.sheet_names)),
+        "detailed_yoy_no_duplicate_keys": bool(not slices["slice_yoy_detailed"].duplicated(PIVOT_SAFE_MAIN_GRAIN).any()),
+        "detailed_mom_no_duplicate_keys": bool(not slices["slice_mom_detailed"].duplicated(PIVOT_SAFE_MAIN_GRAIN).any()),
+        "detailed_yoy_calculated_at_counterparty_grain": metric_values_match_source(
+            main_full,
+            slices["slice_yoy_detailed"],
+            PIVOT_SAFE_MAIN_GRAIN,
+            yoy_metrics,
+        ),
+        "detailed_mom_calculated_at_counterparty_grain": metric_values_match_source(
+            main_full,
+            slices["slice_mom_detailed"],
+            PIVOT_SAFE_MAIN_GRAIN,
+            mom_metrics,
+        ),
+        "detailed_sheets_exclude_service_flow_rows": bool(
+            not slices["slice_yoy_detailed"]["row_role"].eq("service_flow_row").any()
+            and not slices["slice_mom_detailed"]["row_role"].eq("service_flow_row").any()
+            and not slices["slice_plan_fact_detailed"]["row_role"].eq("service_flow_row").any()
+        ),
+        "pivot_safe_numerators_present": numerator_cols.issubset(main_full.columns),
+        "ordinary_summary_sheets_preserved": expected_existing.issubset(set(xl.sheet_names)),
+        "flow_metrics_preserved": bool(
+            "flow_yoy_delta_eur" in main_full.columns
+            and "flow_mom_delta_eur" in main_full.columns
+            and not main_full[
+                main_full["row_role"].eq("service_flow_row")
+                & main_full["article"].isin(SERVICE_VALUES)
+                & main_full["period_month"].gt("2025-01")
+            ][["flow_yoy_delta_eur", "flow_mom_delta_eur"]].dropna(how="all").empty
+        ),
+        "cutoff_checks_preserved": bool(
+            ACTUALS_CLOSED_THROUGH_MONTH == "2026-04"
+            and main_full[
+                main_full["period_month"].gt(ACTUALS_CLOSED_THROUGH_MONTH)
+                & main_full["period_type"].eq("historical")
+            ].empty
         ),
     }
 
@@ -2082,6 +2512,7 @@ def write_qa(
     analysis_metric_checks = validate_analysis_metric_enrichment(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
     period_cutoff_checks = validate_period_cutoff(main_full, flow)
     flow_metric_checks = validate_flow_metric_enrichment(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
+    pivot_safe_checks = validate_pivot_safe_main_full(main_full, slices, MARTS_DIR / "mart_full_package.xlsx")
     top_expense = slices["slice_plan_fact_article"].sort_values("abs_delta_eur", ascending=False).head(50)
     service_in_top = bool(top_expense["article"].isin(SERVICE_VALUES).any()) if "article" in top_expense else False
     compact_trace = bool(
@@ -2106,6 +2537,7 @@ def write_qa(
         **analysis_metric_checks,
         **period_cutoff_checks,
         **flow_metric_checks,
+        **pivot_safe_checks,
         "service_rows_excluded_from_top_expense_deviations": not service_in_top,
         "in_used_as_denominator_for_proportionality_metrics": bool({"plan_to_in_pct", "fact_to_in_pct", "delta_to_in_pct", "abs_delta_to_in_pct"}.issubset(main_full.columns)),
         "in_out_not_summed_across_article_rows": bool(flow["in_out_eur"].notna().any() and "in_out_eur" not in slices["slice_plan_fact_article"].columns),
@@ -2134,6 +2566,7 @@ def write_qa(
         "analysis_metric_checks": analysis_metric_checks,
         "period_cutoff_checks": period_cutoff_checks,
         "flow_metric_checks": flow_metric_checks,
+        "pivot_safe_checks": pivot_safe_checks,
         "actuals_closed_through_month": ACTUALS_CLOSED_THROUGH_MONTH,
         "row_counts": {
             "mart_main_full_budget": int(len(main_full)),
@@ -2176,12 +2609,14 @@ def build_mart_layer() -> dict[str, Any]:
     flow = build_flow_base(stage)
     main_full_core = build_main_full(stage, flow)
     slices = build_all_slices(main_full_core, flow)
-    main_full = enrich_main_full_with_analysis_metrics(main_full_core, slices)
+    row_level_full = enrich_main_full_with_analysis_metrics(main_full_core, slices)
+    main_full = build_pivot_safe_main_full(row_level_full, slices)
+    slices.update(build_pivot_safe_detail_slices(main_full))
     catalog = build_signal_catalog(slices)
     compact = build_compact(catalog)
     write_parquets(main_full, flow, catalog, compact, slices)
     write_configs()
-    write_excel(main_full, flow, catalog, compact, slices)
+    write_excel(main_full, flow, catalog, compact, slices, row_level_full)
     qa = write_qa(main_full, flow, catalog, compact, slices, pre_raw, pre_stage)
     return {
         "qa": qa,

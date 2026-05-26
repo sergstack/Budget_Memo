@@ -46,6 +46,7 @@ EXCEL_ARTIFACTS = {
         "15_Timing_Кандидаты",
         "16_Refunds",
         "17_Пороги",
+        "22_Полный_MART_Строки",
     ],
     MARTS_DIR / "memo_profile_catalog.xlsx": ["Профили_Записок"],
     MARTS_DIR / "memo_depth_mode_catalog.xlsx": ["Режимы_Глубины"],
@@ -85,18 +86,31 @@ CHART_REQUIRED_IDS = {
 }
 
 MANAGEMENT_SHEET_GRAINS = {
+    "01_Полный_MART": ["Месяц", "Год", "Тип периода", "Тип статьи", "Статья 1", "Статья 2", "Статья", "ЦФО", "Контрагент"],
     "05_Plan_Fact": ["Месяц", "Статья", "ЦФО"],
     "06_YoY": ["Статья", "ЦФО", "Год", "Номер месяца"],
     "07_MoM": ["Статья", "ЦФО"],
     "08_Локализация": ["Статья", "ЦФО"],
     "09_Плановый_Риск": ["Статья", "ЦФО"],
-    "10_Контрагенты": ["Контрагент", "Ключ контрагента"],
+    "10_Контрагенты": ["Контрагент"],
     "11_Юрлица": ["Юр. лицо"],
     "12_Валюты": ["Валюта"],
     "13_Юрлица_Валюты": ["Юр. лицо", "Валюта"],
     "15_Timing_Кандидаты": ["Месяц", "Статья", "ЦФО", "Контрагент"],
     "16_Refunds": ["Месяц", "Статья", "ЦФО", "Контрагент"],
 }
+
+PIVOT_SAFE_MAIN_GRAIN = [
+    "period_month",
+    "period_year",
+    "period_type",
+    "article_type",
+    "article_level_1",
+    "article_level_2",
+    "article",
+    "cfo",
+    "counterparty",
+]
 
 
 class AcceptedMartAndProfileContractTest(unittest.TestCase):
@@ -318,6 +332,25 @@ class AcceptedMartAndProfileContractTest(unittest.TestCase):
             "flow_mom_metrics_match_flow_base",
             "regular_yoy_excludes_service_rows",
             "regular_yoy_business_metrics_unchanged",
+            "main_full_pivot_safe_grain",
+            "main_full_no_duplicate_keys",
+            "main_full_yoy_calculated_at_pivot_grain",
+            "main_full_mom_calculated_at_pivot_grain",
+            "main_full_supports_user_pivot_hierarchy",
+            "yoy_delta_equals_current_minus_prior_at_main_grain",
+            "mom_delta_equals_current_minus_previous_at_main_grain",
+            "row_level_evidence_sheet_preserved",
+            "flow_metrics_preserved",
+            "cutoff_checks_preserved",
+            "row_level_evidence_sheet_is_row_level",
+            "excel_no_duplicate_pivot_detail_sheets",
+            "detailed_yoy_no_duplicate_keys",
+            "detailed_mom_no_duplicate_keys",
+            "detailed_yoy_calculated_at_counterparty_grain",
+            "detailed_mom_calculated_at_counterparty_grain",
+            "detailed_sheets_exclude_service_flow_rows",
+            "pivot_safe_numerators_present",
+            "ordinary_summary_sheets_preserved",
         ]:
             self.assertTrue(self.mart_qa["checks"][check_name], check_name)
         for check_name in [
@@ -362,6 +395,14 @@ class AcceptedMartAndProfileContractTest(unittest.TestCase):
         self.assertTrue(service["flow_mom_source_slice"].eq("mart_flow_base_month").all())
         self.assertTrue(service["flow_yoy_metric_grain"].eq("flow_metric+month").all())
         self.assertTrue(service["flow_mom_metric_grain"].eq("flow_metric+month").all())
+        self.assertTrue(service["yoy_source_slice"].eq("mart_flow_base_month").all())
+        self.assertTrue(service["mom_source_slice"].eq("mart_flow_base_month").all())
+        self.assertTrue(service["yoy_metric_grain"].eq("flow_metric+month").all())
+        self.assertTrue(service["mom_metric_grain"].eq("flow_metric+month").all())
+        self.assertTrue(service["prior_year_fact_eur"].equals(service["flow_prior_year_value_eur"]))
+        self.assertTrue(service["previous_month_fact_eur"].equals(service["flow_previous_month_value_eur"]))
+        self.assertTrue((service["yoy_delta_eur"] - (service["fact_eur"] - service["prior_year_fact_eur"].fillna(0))).abs().le(0.01).all())
+        self.assertTrue((service["mom_delta_eur"] - (service["fact_eur"] - service["previous_month_fact_eur"].fillna(0))).abs().le(0.01).all())
         flow_cols = [
             "flow_prior_year_value_eur",
             "flow_yoy_delta_eur",
@@ -375,6 +416,104 @@ class AcceptedMartAndProfileContractTest(unittest.TestCase):
             "flow_mom_source_slice",
         ]
         self.assertTrue(business[flow_cols].isna().all().all())
+
+    def test_main_full_mart_is_pivot_safe_at_user_grain(self) -> None:
+        main = pd.read_parquet(MART_ARTIFACTS["mart_main_full_budget"])
+        self.assertTrue(set(PIVOT_SAFE_MAIN_GRAIN).issubset(main.columns))
+        self.assertNotIn("counterparty_key", main.columns)
+        self.assertFalse(main.duplicated(PIVOT_SAFE_MAIN_GRAIN).any())
+        required_metrics = {
+            "plan_eur",
+            "fact_eur",
+            "delta_eur",
+            "abs_delta_eur",
+            "prior_year_fact_eur",
+            "yoy_delta_eur",
+            "abs_yoy_delta_eur",
+            "yoy_pct",
+            "previous_month_fact_eur",
+            "mom_delta_eur",
+            "abs_mom_delta_eur",
+            "mom_pct",
+            "planning_risk_flag",
+            "planning_risk",
+            "yoy_pct_numerator_eur",
+            "yoy_pct_denominator_eur",
+            "mom_pct_numerator_eur",
+            "mom_pct_denominator_eur",
+            "execution_pct_numerator_eur",
+            "execution_pct_denominator_eur",
+        }
+        self.assertTrue(required_metrics.issubset(main.columns))
+        expected_sort_values = {
+            "IN": "00_IN",
+            "OUT": "00_OUT",
+            "IN-OUT": "00_IN-OUT",
+            "FIX": "01_FIX",
+            "PROJECT&DEPARTMENT SERVICES": "02_PROJECT&DEPARTMENT SERVICES",
+            "INVEST": "03_INVEST",
+            "FIN SERVICES": "04_FIN SERVICES",
+            "OTHER OUTFLOWS": "05_OTHER OUTFLOWS",
+        }
+        self.assertIn("article_type_sort", main.columns)
+        actual_sort_values = main.groupby("article_type", dropna=False)["article_type_sort"].first().to_dict()
+        for article_type, expected in expected_sort_values.items():
+            self.assertEqual(actual_sort_values.get(article_type), expected)
+        business = main[~main["row_role"].eq("service_flow_row")]
+        yoy_rows = business[["fact_eur", "prior_year_fact_eur", "yoy_delta_eur"]].dropna(subset=["fact_eur", "yoy_delta_eur"])
+        mom_rows = business[["fact_eur", "previous_month_fact_eur", "mom_delta_eur"]].dropna(subset=["fact_eur", "mom_delta_eur"])
+        self.assertFalse(yoy_rows.empty)
+        self.assertFalse(mom_rows.empty)
+        self.assertTrue((yoy_rows["yoy_delta_eur"] - (yoy_rows["fact_eur"] - yoy_rows["prior_year_fact_eur"].fillna(0))).abs().le(0.01).all())
+        self.assertTrue((mom_rows["mom_delta_eur"] - (mom_rows["fact_eur"] - mom_rows["previous_month_fact_eur"].fillna(0))).abs().le(0.01).all())
+
+    def test_working_counterparty_slices_do_not_use_counterparty_key(self) -> None:
+        for name in [
+            "slice_plan_fact_article_cfo_counterparty_month",
+            "slice_plan_fact_counterparty",
+            "slice_yoy_counterparty",
+            "slice_mom_counterparty",
+            "slice_plan_vs_history_counterparty",
+            "slice_localization_article_cfo_counterparty",
+            "slice_counterparty_concentration",
+        ]:
+            df = pd.read_parquet(MARTS_DIR / f"{name}.parquet")
+            self.assertNotIn("counterparty_key", df.columns, name)
+
+    def test_pivot_safe_excel_sheets_are_preserved(self) -> None:
+        with pd.ExcelFile(MARTS_DIR / "mart_full_package.xlsx") as workbook:
+            for sheet_name in [
+                "01_Полный_MART",
+                "22_Полный_MART_Строки",
+            ]:
+                self.assertIn(sheet_name, workbook.sheet_names)
+            for sheet_name in ["18_PlanFact_Детально", "19_YoY_Детально", "20_MoM_Детально", "21_ПланРиск_Детально"]:
+                self.assertNotIn(sheet_name, workbook.sheet_names)
+            headers = set(pd.read_excel(workbook, sheet_name="01_Полный_MART", nrows=0).columns)
+            counterparty_headers = set(pd.read_excel(workbook, sheet_name="10_Контрагенты", nrows=0).columns)
+            row_headers = set(pd.read_excel(workbook, sheet_name="22_Полный_MART_Строки", nrows=0).columns)
+        required_headers = {
+            "Месяц",
+            "Год",
+            "Тип периода",
+            "Тип статьи",
+            "Тип статьи сортировка",
+            "Статья 1",
+            "Статья 2",
+            "Статья",
+            "ЦФО",
+            "Контрагент",
+            "Числитель YoY %, EUR",
+            "Знаменатель YoY %, EUR",
+            "Числитель MoM %, EUR",
+            "Знаменатель MoM %, EUR",
+            "Числитель исполнения, EUR",
+            "Знаменатель исполнения, EUR",
+        }
+        self.assertTrue(required_headers.issubset(headers))
+        self.assertNotIn("Ключ контрагента", headers)
+        self.assertNotIn("Ключ контрагента", counterparty_headers)
+        self.assertIn("Ключ контрагента", row_headers)
 
     def test_chart_package_contract_when_present(self) -> None:
         if self.chart_qa is None:
