@@ -350,13 +350,14 @@ def _chart_interpretation(row: dict) -> dict:
     title = _polish_visible_terms(str(row.get("title_ru", "")).strip())
     source = _polish_visible_terms(str(row.get("source", "")).strip())
     limitation = _polish_visible_terms(str(row.get("limitation", "")).strip())
-    check = _chart_check_action(title)
+    chart_id = str(row.get("chart_id", ""))
+    profile = _chart_interpretation_profile(chart_id, title)
     return {
-        "chart_id": str(row.get("chart_id", "")),
+        "chart_id": chart_id,
         "title": title,
-        "what_shows": f"Показывает выбранный разрез стандартной записки План-Факт: {title.lower()}.",
-        "management_meaning": f"Помогает определить маршрут управленческого просмотра. Источник: {source}.",
-        "what_to_check": check,
+        "what_shows": profile["what_shows"],
+        "management_meaning": f"{profile['management_meaning']} Источник: {source}.",
+        "what_to_check": profile["what_to_check"],
         "limitation": limitation,
     }
 
@@ -399,6 +400,51 @@ def _chart_check_action(title: str) -> str:
     return "Проверить первичные строки и подтверждения владельцев бюджета перед управленческим выводом."
 
 
+def _chart_interpretation_profile(chart_id: str, title: str) -> dict[str, str]:
+    normalized = f"{chart_id} {title}".lower()
+    if "planning_quality" in normalized or "планирован" in normalized:
+        return {
+            "what_shows": "Сопоставляет частоту сигналов качества планирования с денежным масштабом отклонений.",
+            "management_meaning": "Помогает отделить массовые плановые расхождения от немногочисленных, но материальных сигналов.",
+            "what_to_check": "Проверить группы, где одновременно заметны частота сигнала и денежный масштаб; причину подтверждать только по первичным строкам и комментариям владельцев.",
+        }
+    if "top" in normalized or "стать" in normalized or "отклон" in normalized:
+        return {
+            "what_shows": "Показывает статьи с наибольшим вкладом в отклонение за выбранный период.",
+            "management_meaning": "Фокусирует управленческий просмотр на статьях, где масштаб проверки выше, без вывода о причине отклонения.",
+            "what_to_check": "Сверить знак отклонения, первичные строки и принадлежность статьи к принятой бизнес-классификации.",
+        }
+    if "цфо" in normalized or "cfo" in normalized:
+        return {
+            "what_shows": "Показывает связку ЦФО и статей, где требуется управленческий просмотр.",
+            "management_meaning": "Помогает определить маршрут обсуждения между ответственными центрами и владельцами статей.",
+            "what_to_check": "Проверить пары ЦФО и статья по исходным подтверждениям; не назначать владельцев без подтверждения в источниках.",
+        }
+    if "факт без плана" in normalized or "plan_without_fact" in normalized or "fact_without_plan" in normalized or "план без факта" in normalized:
+        return {
+            "what_shows": "Выделяет зоны, где факт и план не имеют прямой пары в принятом пакете.",
+            "management_meaning": "Показывает кандидатов на проверку полноты планирования, периода отражения или классификации.",
+            "what_to_check": "Разделить неполноту плана, перенос периода и классификацию операции по первичным строкам.",
+        }
+    if "контрагент" in normalized or "counterparty" in normalized:
+        return {
+            "what_shows": "Показывает концентрацию сигнала по контрагентам.",
+            "management_meaning": "Помогает локализовать проверку на уровне контрагентских операций без вывода о причине.",
+            "what_to_check": "Проверить первичные строки, договорную природу операций и связь с принятой статьёй.",
+        }
+    if "юрлиц" in normalized or "legal" in normalized or "валют" in normalized or "currency" in normalized:
+        return {
+            "what_shows": "Показывает распределение сигнала по юридическим лицам и валютному признаку.",
+            "management_meaning": "Помогает отделить операционный сигнал от эффекта контура учёта или валютного представления.",
+            "what_to_check": "Проверить юридическое лицо, валюту и способ отражения операции до управленческого вывода.",
+        }
+    return {
+        "what_shows": f"Показывает выбранный управленческий разрез: {title.lower()}.",
+        "management_meaning": "Помогает выбрать направление ручной проверки без самостоятельного вывода о причине.",
+        "what_to_check": _chart_check_action(title),
+    }
+
+
 def _extract_key_findings(narrative: str) -> list[str]:
     lines = []
     for raw in narrative.splitlines():
@@ -436,10 +482,16 @@ def _polish_visible_terms(text: str) -> str:
     replacements = {
         "memo02": "стандартная записка План-Факт",
         "Memo02": "стандартная записка План-Факт",
-        "Delta": "отклонение",
-        "ABS": "модуль отклонения",
         "Word": "документ",
         "narrative": "управленческий текст",
+        "memo02_standard_final_text": "финальный текст стандартной записки",
+        "standard_final_chart_metadata": "реестр графиков стандартного пакета",
+        "evidence_map": "карта подтверждений",
+        "package_qa": "проверка пакета",
+        "chart_id": "идентификатор графика",
+        "planning_quality_frequency_impact": "качество планирования: частота и денежный масштаб",
+        "отрицательную отклонение": "отрицательное отклонение",
+        "направление отклонение": "направление отклонения",
     }
     for source, target in replacements.items():
         text = text.replace(source, target)
