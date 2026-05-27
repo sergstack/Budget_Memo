@@ -35,6 +35,12 @@ This is the local full unit test command. Some tests may require ignored local d
 It is local validation and not the default public CI command.
 Run it only with explicit authorization unless the selected modules are proven public-data-free.
 
+After a fresh mart rebuild, regenerate profile/depth QA artifacts before running full discovery:
+
+```bash
+python3 src/build_memo_profiles.py
+```
+
 ## Run Selected Tests
 
 Run one test module:
@@ -64,6 +70,7 @@ These checks require ignored local layers such as `01_raw/`, `02_stage/`, `03_ma
 ```bash
 python3 src/main.py
 python3 src/build_marts.py
+python3 src/build_memo_profiles.py
 python3 -m unittest tests.test_output_contract -q
 python3 -m unittest tests.test_mart_outputs -q
 ```
